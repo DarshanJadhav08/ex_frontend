@@ -1,252 +1,373 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Expense Management Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Manager | Personal Finance Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
 
-<div class="container">
-  <!-- Header -->
-  <header class="dashboard-header">
-    <div class="header-left">
-      <h1><i class="fas fa-chart-pie"></i> Expense Manager</h1>
-      <p class="subtitle">Track, manage, and analyze expenses efficiently</p>
-    </div>
-    <div class="header-right">
-      <div class="current-date">
-        <i class="far fa-calendar-alt"></i>
-        <span id="currentDate">Loading...</span>
-      </div>
-    </div>
-  </header>
+    <!-- Login Section (Visible by default) -->
+    <div id="login-section" class="section active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="brand">
+                    <i class="fas fa-chart-pie"></i>
+                    <h1>Expense Manager</h1>
+                    <p class="subtitle">Track your personal expenses</p>
+                </div>
 
-  <!-- ===== QUICK STATS ===== -->
-  <section class="stats-section">
-    <h2 class="section-title">Dashboard Overview</h2>
-    <div class="stats">
-      <div class="card stat-card">
-        <div class="card-icon users">
-          <i class="fas fa-users"></i>
-        </div>
-        <div class="card-content">
-          <p class="stat-label">Total Users</p>
-          <h3 class="stat-value" id="totalUsers">0</h3>
-        </div>
-      </div>
-      <div class="card stat-card">
-        <div class="card-icon balance">
-          <i class="fas fa-wallet"></i>
-        </div>
-        <div class="card-content">
-          <p class="stat-label">Total Balance</p>
-          <h3 class="stat-value" id="totalBalance">0</h3>
-        </div>
-      </div>
-      <div class="card stat-card">
-        <div class="card-icon transactions">
-          <i class="fas fa-exchange-alt"></i>
-        </div>
-        <div class="card-content">
-          <p class="stat-label">Today's Transactions</p>
-          <h3 class="stat-value" id="todayTxn">0</h3>
-        </div>
-      </div>
-      <div class="card stat-card">
-        <div class="card-icon expense">
-          <i class="fas fa-chart-line"></i>
-        </div>
-        <div class="card-content">
-          <p class="stat-label">Avg Expense</p>
-          <h3 class="stat-value" id="avgExpense">0</h3>
-        </div>
-      </div>
-    </div>
-  </section>
+                <div class="login-form">
+                    <h2>Sign In to Your Account</h2>
+                    
+                    <div class="form-group">
+                        <label for="login-firstname">
+                            <i class="fas fa-user"></i>
+                            <span>First Name</span>
+                        </label>
+                        <input type="text" id="login-firstname" placeholder="Enter your first name">
+                    </div>
 
-  <!-- Main Content Area -->
-  <div class="content-wrapper">
-    <!-- Left Column: User Management -->
-    <div class="left-column">
-      <!-- CREATE USER -->
-      <div class="card form-card">
-        <div class="card-header">
-          <h3><i class="fas fa-user-plus"></i> Create New User</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="firstName"><i class="fas fa-user"></i> First Name</label>
-            <input id="firstName" placeholder="Enter first name" />
-          </div>
-          
-          <div class="form-group">
-            <label for="lastName"><i class="fas fa-user"></i> Last Name</label>
-            <input id="lastName" placeholder="Enter last name" />
-          </div>
-          
-          <div class="form-group">
-            <label for="totalAmount"><i class="fas fa-money-bill-wave"></i> Initial Amount</label>
-            <div class="input-with-icon">
-              <span class="input-icon">$</span>
-              <input id="totalAmount" type="number" placeholder="0.00" />
+                    <div class="form-group">
+                        <label for="login-lastname">
+                            <i class="fas fa-user"></i>
+                            <span>Last Name</span>
+                        </label>
+                        <input type="text" id="login-lastname" placeholder="Enter your last name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-password">
+                            <i class="fas fa-lock"></i>
+                            <span>Password</span>
+                        </label>
+                        <input type="password" id="login-password" placeholder="Enter your password">
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox">
+                            <input type="checkbox" id="remember-me">
+                            <span class="checkmark"></span>
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" class="forgot-password">Forgot password?</a>
+                    </div>
+
+                    <button class="btn btn-primary btn-block" onclick="login()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Sign In</span>
+                    </button>
+
+                    <div class="register-link">
+                        <p>Don't have an account? <a href="#" onclick="showRegister()">Register here</a></p>
+                    </div>
+                </div>
             </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="datePicker"><i class="far fa-calendar"></i> Registration Date</label>
-            <div class="date-input-wrapper">
-              <input id="datePicker" placeholder="Select date" />
-              <i class="far fa-calendar-alt date-icon"></i>
+        </div>
+    </div>
+
+    <!-- Register Section -->
+    <div id="register-section" class="section">
+        <div class="register-container">
+            <div class="register-card">
+                <div class="back-to-login">
+                    <button class="btn-back" onclick="showLogin()">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Login</span>
+                    </button>
+                </div>
+
+                <div class="brand">
+                    <i class="fas fa-user-plus"></i>
+                    <h1>Create Account</h1>
+                    <p class="subtitle">Join Expense Manager today</p>
+                </div>
+
+                <div class="register-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reg-firstname">
+                                <i class="fas fa-user"></i>
+                                <span>First Name</span>
+                            </label>
+                            <input type="text" id="reg-firstname" placeholder="John">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-lastname">
+                                <i class="fas fa-user"></i>
+                                <span>Last Name</span>
+                            </label>
+                            <input type="text" id="reg-lastname" placeholder="Doe">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-password">
+                            <i class="fas fa-lock"></i>
+                            <span>Password</span>
+                        </label>
+                        <input type="password" id="reg-password" placeholder="Create a password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-confirm-password">
+                            <i class="fas fa-lock"></i>
+                            <span>Confirm Password</span>
+                        </label>
+                        <input type="password" id="reg-confirm-password" placeholder="Confirm your password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-amount">
+                            <i class="fas fa-wallet"></i>
+                            <span>Initial Balance</span>
+                        </label>
+                        <div class="input-with-icon">
+                            <span class="currency">$</span>
+                            <input type="number" id="reg-amount" placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="terms">
+                        <label class="checkbox">
+                            <input type="checkbox" id="agree-terms">
+                            <span class="checkmark"></span>
+                            <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+                        </label>
+                    </div>
+
+                    <button class="btn btn-success btn-block" onclick="register()">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Create Account</span>
+                    </button>
+                </div>
             </div>
-          </div>
-          
-          <button type="button" class="btn btn-primary" onclick="createUser()">
-            <i class="fas fa-plus-circle"></i> Create User
-          </button>
-          
-          <div class="form-note">
-            <i class="fas fa-info-circle"></i> Date will be automatically parsed into month and year
-          </div>
         </div>
-      </div>
-
-      <!-- DELETE USER -->
-      <div class="card form-card">
-        <div class="card-header">
-          <h3><i class="fas fa-user-times"></i> Delete User</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="deleteUser"><i class="fas fa-user"></i> Select User</label>
-            <select id="deleteUser">
-              <option value="">Select a user to delete</option>
-            </select>
-          </div>
-          
-          <button
-            type="button"
-            class="btn btn-danger delete-btn"
-            onclick="deleteUserFn()"
-          >
-            <i class="fas fa-trash-alt"></i> Delete User
-          </button>
-          
-          <div class="warning-note">
-            <i class="fas fa-exclamation-triangle"></i> This action cannot be undone
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Right Column: Financial Operations -->
-    <div class="right-column">
-      <!-- ADD MONEY -->
-      <div class="card form-card">
-        <div class="card-header">
-          <h3><i class="fas fa-money-bill-alt"></i> Add Money</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="userName"><i class="fas fa-user"></i> Select User</label>
-            <select id="userName">
-              <option value="">Choose a user</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="addAmount"><i class="fas fa-coins"></i> Amount to Add</label>
-            <div class="input-with-icon">
-              <span class="input-icon">$</span>
-              <input id="addAmount" type="number" placeholder="0.00" />
+    <!-- Main Dashboard Section (Hidden by default) -->
+    <div id="dashboard-section" class="section">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-chart-pie"></i>
+                    <h1>Expense Manager</h1>
+                </div>
+                <div class="user-welcome">
+                    <h2>Welcome, <span id="welcome-user">User</span></h2>
+                    <p class="user-balance">Current Balance: <span id="current-balance">$0.00</span></p>
+                </div>
             </div>
-          </div>
-          
-          <button type="button" class="btn btn-success" onclick="addMoney()">
-            <i class="fas fa-plus"></i> Add Money
-          </button>
-        </div>
-      </div>
-
-      <!-- ADD EXPENSE -->
-      <div class="card form-card">
-        <div class="card-header">
-          <h3><i class="fas fa-shopping-cart"></i> Add Expense</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="expenseUser"><i class="fas fa-user"></i> Select User</label>
-            <select id="expenseUser">
-              <option value="">Choose a user</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="expenseAmount"><i class="fas fa-receipt"></i> Expense Amount</label>
-            <div class="input-with-icon">
-              <span class="input-icon">$</span>
-              <input id="expenseAmount" type="number" placeholder="0.00" />
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <div class="user-details">
+                        <span class="user-name" id="user-fullname">User Name</span>
+                        <span class="user-email" id="user-email">user@example.com</span>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
             </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="expenseCategory"><i class="fas fa-tag"></i> Category</label>
-            <select id="expenseCategory">
-              <option value="">Select category</option>
-              <option value="Food">Food & Dining</option>
-              <option value="Transport">Transportation</option>
-              <option value="Shopping">Shopping</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Bills">Bills & Utilities</option>
-              <option value="Healthcare">Healthcare</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="expenseDescription"><i class="fas fa-sticky-note"></i> Description</label>
-            <input id="expenseDescription" placeholder="Enter expense description" />
-          </div>
-          
-          <button type="button" class="btn btn-warning" onclick="addExpense()">
-            <i class="fas fa-plus"></i> Add Expense
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+        </header>
 
-  <!-- Recent Activity Section
-  <section class="activity-section">
-    <div class="section-header">
-      <h2 class="section-title">Recent Activity</h2>
-      <button class="btn-refresh" onclick="loadQuickStats()">
-        <i class="fas fa-sync-alt"></i> Refresh
-      </button>
-    </div>
-    <div class="activity-feed">
-      <div class="activity-item">
-        <div class="activity-icon">
-          <i class="fas fa-user-plus"></i>
-        </div>
-        <div class="activity-content">
-          <p>No recent activity. Create a user or add a transaction to see activity here.</p>
-          <span class="activity-time">Just now</span>
-        </div>
-      </div>
-    </div>
-  </section> -->
+        <div class="container">
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon total-added">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Added</h3>
+                        <p class="stat-value" id="total-added">$0.00</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon total-spent">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Spent</h3>
+                        <p class="stat-value" id="total-spent">$0.00</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon total-transactions">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Transactions</h3>
+                        <p class="stat-value" id="total-transactions">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon avg-expense">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Avg. Expense</h3>
+                        <p class="stat-value" id="avg-expense">$0.00</p>
+                    </div>
+                </div>
+            </div>
 
-  <!-- Footer -->
-  <footer class="dashboard-footer">
-    <p>Expense Management Dashboard &copy; <span id="currentYear">2023</span> | Built with <i class="fas fa-heart"></i> for efficient expense tracking</p>
-  </footer>
-</div>
+            <!-- Main Content -->
+            <div class="content-grid">
+                <!-- Left Column - Forms -->
+                <div class="left-column">
+                    <!-- Add Money Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-plus-circle"></i> Add Money</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="add-amount">Amount to Add</label>
+                                <div class="input-with-icon">
+                                    <span class="currency">$</span>
+                                    <input type="number" id="add-amount" placeholder="0.00" step="0.01">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="add-description">Description (Optional)</label>
+                                <input type="text" id="add-description" placeholder="Salary, Gift, etc.">
+                            </div>
+                            <button class="btn btn-success" onclick="addMoney()">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Money</span>
+                            </button>
+                        </div>
+                    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="script.js"></script>
+                    <!-- Add Expense Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-minus-circle"></i> Add Expense</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="expense-amount">Expense Amount</label>
+                                <div class="input-with-icon">
+                                    <span class="currency">$</span>
+                                    <input type="number" id="expense-amount" placeholder="0.00" step="0.01">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="expense-category">Category</label>
+                                <select id="expense-category">
+                                    <option value="">Select Category</option>
+                                    <option value="Food">Food & Dining</option>
+                                    <option value="Transport">Transportation</option>
+                                    <option value="Shopping">Shopping</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Bills">Bills & Utilities</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="expense-description">Description</label>
+                                <input type="text" id="expense-description" placeholder="What did you spend on?">
+                            </div>
+                            <button class="btn btn-warning" onclick="addExpense()">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Expense</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Reports & Transactions -->
+                <div class="right-column">
+                    <!-- Report Section -->
+                    <div class="report-section">
+                        <div class="report-header">
+                            <h3><i class="fas fa-file-alt"></i> Transaction Report</h3>
+                            <div class="report-actions">
+                                <button class="btn btn-primary" onclick="generateReport()" id="generate-report-btn">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Generate Report</span>
+                                </button>
+                                <button class="btn btn-success" onclick="downloadPDFReport()" id="download-report-btn" style="display: none;">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span>Download PDF</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Report Filters -->
+                        <div class="report-filters" id="report-filters">
+                            <div class="filter-group">
+                                <label for="report-period">Period:</label>
+                                <select id="report-period">
+                                    <option value="all">All Time</option>
+                                    <option value="today">Today</option>
+                                    <option value="week">This Week</option>
+                                    <option value="month">This Month</option>
+                                    <option value="year">This Year</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" id="custom-date-range" style="display: none;">
+                                <label for="start-date">From:</label>
+                                <input type="date" id="start-date">
+                                <label for="end-date">To:</label>
+                                <input type="date" id="end-date">
+                            </div>
+                            <div class="filter-group">
+                                <label for="report-type">Type:</label>
+                                <select id="report-type">
+                                    <option value="all">All Transactions</option>
+                                    <option value="credit">Money Added Only</option>
+                                    <option value="debit">Expenses Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Report Summary -->
+                        <div class="report-summary" id="report-summary">
+                            <div class="loading">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Click "Generate Report" to see your transaction history</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="transactions-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-history"></i> Recent Transactions</h3>
+                            <button class="btn-refresh" onclick="loadUserData()">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                        
+                        <div class="transactions-list" id="transactions-list">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Loading transactions...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
