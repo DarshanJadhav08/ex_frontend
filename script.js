@@ -45,8 +45,8 @@ class ExpenseDB {
             lastName: lastName,
             fullName: `${firstName} ${lastName}`,
             password: password,
-            initialAmount: initialAmount,
-            currentBalance: initialAmount,
+            initialAmount: parseFloat(initialAmount),
+            currentBalance: parseFloat(initialAmount),
             createdAt: new Date().toISOString(),
             lastLogin: new Date().toISOString()
         };
@@ -59,11 +59,12 @@ class ExpenseDB {
         this.addTransaction(userId, {
             id: Date.now(),
             type: 'credit',
-            amount: initialAmount,
+            amount: parseFloat(initialAmount),
             description: 'Initial Amount',
             category: 'Initial',
             date: this.getCurrentDate(),
-            time: this.getCurrentTime()
+            time: this.getCurrentTime(),
+            isInitial: true  // Mark as initial transaction
         });
         
         return { success: true, data: user };
@@ -103,7 +104,7 @@ class ExpenseDB {
             return { success: false, error: 'User not found' };
         }
         
-        user.currentBalance += amount;
+        user.currentBalance += parseFloat(amount);
         db.users[userId] = user;
         this.saveDB(db);
         
@@ -272,6 +273,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up Enter key listeners
     setupEnterKeyListeners();
     setupCustomDateRange();
+    
+    // Add PDF button click listener
+    const pdfBtn = document.getElementById('download-report-btn');
+    if (pdfBtn) {
+        pdfBtn.addEventListener('click', downloadPDFReport);
+    }
 });
 
 // Set up Enter key listeners for forms
@@ -575,7 +582,7 @@ async function register() {
         const body = {
             First_Name: firstName,
             Last_Name: lastName,
-            Total_Amount: Number(amount),
+            Total_Amount: parseFloat(amount),
             Date: `${day}-${month}-${year}`,
             Month: month,
             Year: year
@@ -589,20 +596,20 @@ async function register() {
 
         const result = await res.json();
         
-        let userId = null;
+        let apiId = null;
         if (result.success) {
-            userId = result.data.id;
+            apiId = result.data.id;
         }
         
-        // Always create user in local database
-        const dbResult = expenseDB.createUser(firstName, lastName, password, Number(amount));
+        // Create user in local database
+        const dbResult = expenseDB.createUser(firstName, lastName, password, parseFloat(amount));
         
         if (dbResult.success) {
             const user = dbResult.data;
             
             currentUser = {
                 id: user.id,
-                apiId: userId,
+                apiId: apiId,
                 firstName: user.firstName,
                 lastName: user.lastName,
                 fullName: user.fullName,
@@ -640,7 +647,7 @@ function logout() {
 }
 
 // ===============================
-// LOAD USER DATA
+// LOAD USER DATA (FIXED - No Double Counting)
 // ===============================
 async function loadUserData() {
     if (!currentUser || !currentUser.id) {
@@ -657,28 +664,23 @@ async function loadUserData() {
             </div>
         `;
         
+        // Get user from database
+        const dbUser = expenseDB.getUser(currentUser.id);
+        if (!dbUser) {
+            showNotification('User not found. Please login again.', 'error');
+            logout();
+            return;
+        }
+        
+        // Update current user with latest data
+        currentUser.currentBalance = dbUser.currentBalance;
+        currentUser.initialAmount = dbUser.initialAmount;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
         // Get transactions from database
         userTransactions = expenseDB.getUserTransactions(currentUser.id);
         
-        // Try to sync with API if user has API ID
-        if (currentUser.apiId) {
-            try {
-                const userRes = await fetch(`${API}/user/${currentUser.apiId}`);
-                const userResult = await userRes.json();
-                
-                if (userResult.success) {
-                    const apiUser = userResult.data;
-                    
-                    // Update local user balance from API
-                    currentUser.currentBalance = apiUser.Total_Amount || currentUser.initialAmount;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                }
-            } catch (apiError) {
-                console.log('API sync failed, using local data');
-            }
-        }
-        
-        // Calculate totals
+        // Calculate totals CORRECTLY (no double counting)
         calculateUserStats();
         
         // Update UI with stats
@@ -686,12 +688,6 @@ async function loadUserData() {
         
         // Update transaction list
         updateTransactionList();
-        
-        // Update current user data
-        currentUser.balance = userStats.currentBalance;
-        currentUser.totalAdded = userStats.totalAdded;
-        currentUser.totalSpent = userStats.totalSpent;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
         
     } catch (error) {
         console.error('Error loading user data:', error);
@@ -706,31 +702,15 @@ async function loadUserData() {
     }
 }
 
-// Helper functions for dates
-function getCurrentDate() {
-    const today = new Date();
-    const day = String(today.getDate()).padStart(2, '0');
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const year = today.getFullYear();
-    return `${day}-${month}-${year}`;
-}
-
-function getCurrentTime() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
-
 // ===============================
-// CALCULATE USER STATS
+// CALCULATE USER STATS (FIXED - No Double Counting)
 // ===============================
 function calculateUserStats() {
-    let totalAdded = currentUser.initialAmount || 0;
+    let totalAdded = 0;
     let totalSpent = 0;
     let totalTransactions = userTransactions.length;
     
-    // Calculate from transactions
+    // Calculate ONLY from transactions (not including initial amount separately)
     userTransactions.forEach(transaction => {
         if (transaction.type === 'credit') {
             totalAdded += transaction.amount || 0;
@@ -739,8 +719,13 @@ function calculateUserStats() {
         }
     });
     
-    const currentBalance = totalAdded - totalSpent;
-    const avgExpense = totalTransactions > 0 ? (totalSpent / totalTransactions) : 0;
+    // Current balance should be from user data
+    const currentBalance = currentUser.currentBalance || 0;
+    
+    // For average expense, consider only debit transactions
+    const debitTransactions = userTransactions.filter(t => t.type === 'debit');
+    const avgExpense = debitTransactions.length > 0 ? 
+        (totalSpent / debitTransactions.length) : 0;
     
     userStats = {
         totalAdded: totalAdded,
@@ -780,11 +765,13 @@ async function addMoney() {
     }
     
     try {
+        const amountNum = parseFloat(amount);
+        
         // Add money to local database
         const newTransaction = {
             id: Date.now(),
             type: 'credit',
-            amount: Number(amount),
+            amount: amountNum,
             description: description,
             category: 'Income',
             date: getCurrentDate(),
@@ -793,7 +780,7 @@ async function addMoney() {
         
         // Save to local database
         expenseDB.addTransaction(currentUser.id, newTransaction);
-        expenseDB.updateUserBalance(currentUser.id, Number(amount));
+        expenseDB.updateUserBalance(currentUser.id, amountNum);
         
         // Try to sync with API if user has API ID
         if (currentUser.apiId) {
@@ -804,7 +791,7 @@ async function addMoney() {
                     body: JSON.stringify({
                         first_name: currentUser.firstName,
                         last_name: currentUser.lastName,
-                        add_amount: Number(amount)
+                        add_amount: amountNum
                     })
                 });
             } catch (apiError) {
@@ -856,11 +843,20 @@ async function addExpense() {
     }
 
     try {
+        const amountNum = parseFloat(amount);
+        
+        // Check if user has enough balance
+        const dbUser = expenseDB.getUser(currentUser.id);
+        if (dbUser.currentBalance < amountNum) {
+            showNotification('Insufficient balance!', 'error');
+            return;
+        }
+        
         // Add expense to local database
         const newTransaction = {
             id: Date.now(),
             type: 'debit',
-            amount: Number(amount),
+            amount: amountNum,
             description: description,
             category: category,
             date: getCurrentDate(),
@@ -869,7 +865,7 @@ async function addExpense() {
         
         // Save to local database
         expenseDB.addTransaction(currentUser.id, newTransaction);
-        expenseDB.updateUserBalance(currentUser.id, -Number(amount));
+        expenseDB.updateUserBalance(currentUser.id, -amountNum);
         
         // Try to sync with API if user has API ID
         if (currentUser.apiId) {
@@ -878,7 +874,7 @@ async function addExpense() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        expense: Number(amount),
+                        expense: amountNum,
                         category: category,
                         description: description
                     })
@@ -902,6 +898,22 @@ async function addExpense() {
         console.error(err);
         showNotification('Error adding expense', 'error');
     }
+}
+
+// Helper functions for dates
+function getCurrentDate() {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
+function getCurrentTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
 }
 
 // ===============================
@@ -1460,8 +1472,8 @@ function generatePDF(totals, transactions) {
     
     // Save PDF
     const date = new Date().toISOString().split('T')[0];
-    const time = new Date().toTimeString().split(' ')[0].replace(/:/g, '-');
-    const filename = `Expense_Report_${currentUser.firstName}_${date}_${time}.pdf`;
+    const timeStr = new Date().toTimeString().split(' ')[0].replace(/:/g, '-');
+    const filename = `Expense_Report_${currentUser.firstName}_${date}_${timeStr}.pdf`;
     
     doc.save(filename);
     
