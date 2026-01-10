@@ -1190,32 +1190,6 @@ table tfoot tr:last-child {
     background: rgba(67, 97, 238, 0.05);
 }
 
-/* ===== PDF PREVIEW ===== */
-.pdf-preview-info {
-    background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
-    border: 2px dashed #ffc107;
-    border-radius: var(--border-radius-sm);
-    padding: 20px;
-    margin: 20px 0;
-    text-align: center;
-}
-
-.pdf-preview-info i {
-    color: #ffc107;
-    font-size: 24px;
-    margin-bottom: 10px;
-}
-
-.pdf-preview-info h4 {
-    color: #856404;
-    margin-bottom: 10px;
-}
-
-.pdf-preview-info p {
-    color: #856404;
-    font-size: 14px;
-}
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .login-card,
@@ -1355,4 +1329,13 @@ input:valid, select:valid {
     .report-summary-cards {
         page-break-inside: avoid;
     }
+}
+
+/* ===== COLOR UTILITIES ===== */
+.positive {
+    color: var(--success) !important;
+}
+
+.negative {
+    color: var(--danger) !important;
 }

@@ -12,6 +12,236 @@ let userStats = {
     avgExpense: 0
 };
 
+// Database class for localStorage
+class ExpenseDB {
+    constructor() {
+        this.dbName = 'expenseManagerDB';
+        this.init();
+    }
+    
+    init() {
+        if (!localStorage.getItem(this.dbName)) {
+            localStorage.setItem(this.dbName, JSON.stringify({
+                users: {},
+                transactions: {},
+                lastUserId: 0,
+                lastTransactionId: 0
+            }));
+        }
+    }
+    
+    // User methods
+    createUser(firstName, lastName, password, initialAmount) {
+        const db = this.getDB();
+        const userId = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
+        
+        if (db.users[userId]) {
+            return { success: false, error: 'User already exists' };
+        }
+        
+        const user = {
+            id: userId,
+            firstName: firstName,
+            lastName: lastName,
+            fullName: `${firstName} ${lastName}`,
+            password: password,
+            initialAmount: initialAmount,
+            currentBalance: initialAmount,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+        };
+        
+        db.users[userId] = user;
+        db.lastUserId++;
+        this.saveDB(db);
+        
+        // Create initial transaction
+        this.addTransaction(userId, {
+            id: Date.now(),
+            type: 'credit',
+            amount: initialAmount,
+            description: 'Initial Amount',
+            category: 'Initial',
+            date: this.getCurrentDate(),
+            time: this.getCurrentTime()
+        });
+        
+        return { success: true, data: user };
+    }
+    
+    authenticateUser(firstName, lastName, password) {
+        const userId = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
+        const db = this.getDB();
+        const user = db.users[userId];
+        
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+        
+        if (user.password !== password) {
+            return { success: false, error: 'Invalid password' };
+        }
+        
+        // Update last login
+        user.lastLogin = new Date().toISOString();
+        db.users[userId] = user;
+        this.saveDB(db);
+        
+        return { success: true, data: user };
+    }
+    
+    getUser(userId) {
+        const db = this.getDB();
+        return db.users[userId] || null;
+    }
+    
+    updateUserBalance(userId, amount) {
+        const db = this.getDB();
+        const user = db.users[userId];
+        
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+        
+        user.currentBalance += amount;
+        db.users[userId] = user;
+        this.saveDB(db);
+        
+        return { success: true, data: user };
+    }
+    
+    // Transaction methods
+    addTransaction(userId, transaction) {
+        const db = this.getDB();
+        
+        if (!db.transactions[userId]) {
+            db.transactions[userId] = [];
+        }
+        
+        // Add transaction to beginning of array
+        db.transactions[userId].unshift(transaction);
+        db.lastTransactionId++;
+        this.saveDB(db);
+        
+        return { success: true, data: transaction };
+    }
+    
+    getUserTransactions(userId) {
+        const db = this.getDB();
+        return db.transactions[userId] || [];
+    }
+    
+    getFilteredTransactions(userId, filters = {}) {
+        let transactions = this.getUserTransactions(userId);
+        
+        // Filter by type
+        if (filters.type && filters.type !== 'all') {
+            transactions = transactions.filter(t => t.type === filters.type);
+        }
+        
+        // Filter by period
+        if (filters.period && filters.period !== 'all') {
+            const today = new Date();
+            let startDate = new Date();
+            
+            switch(filters.period) {
+                case 'today':
+                    startDate.setHours(0, 0, 0, 0);
+                    transactions = transactions.filter(t => {
+                        const transDate = this.parseDate(t.date);
+                        return transDate >= startDate;
+                    });
+                    break;
+                case 'week':
+                    startDate.setDate(today.getDate() - 7);
+                    transactions = transactions.filter(t => {
+                        const transDate = this.parseDate(t.date);
+                        return transDate >= startDate;
+                    });
+                    break;
+                case 'month':
+                    startDate.setMonth(today.getMonth() - 1);
+                    transactions = transactions.filter(t => {
+                        const transDate = this.parseDate(t.date);
+                        return transDate >= startDate;
+                    });
+                    break;
+                case 'year':
+                    startDate.setFullYear(today.getFullYear() - 1);
+                    transactions = transactions.filter(t => {
+                        const transDate = this.parseDate(t.date);
+                        return transDate >= startDate;
+                    });
+                    break;
+                case 'custom':
+                    if (filters.startDate && filters.endDate) {
+                        const start = new Date(filters.startDate);
+                        const end = new Date(filters.endDate);
+                        end.setHours(23, 59, 59, 999);
+                        
+                        transactions = transactions.filter(t => {
+                            const transDate = this.parseDate(t.date);
+                            return transDate >= start && transDate <= end;
+                        });
+                    }
+                    break;
+            }
+        }
+        
+        return transactions;
+    }
+    
+    // Helper methods
+    getDB() {
+        return JSON.parse(localStorage.getItem(this.dbName));
+    }
+    
+    saveDB(data) {
+        localStorage.setItem(this.dbName, JSON.stringify(data));
+    }
+    
+    getCurrentDate() {
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
+    
+    getCurrentTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    }
+    
+    parseDate(dateStr) {
+        if (!dateStr) return new Date();
+        
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                // Check if format is DD-MM-YYYY or YYYY-MM-DD
+                if (parts[0].length === 4) {
+                    // YYYY-MM-DD format
+                    return new Date(parts[0], parts[1] - 1, parts[2]);
+                } else {
+                    // DD-MM-YYYY format
+                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            }
+        }
+        
+        const parsed = new Date(dateStr);
+        if (!isNaN(parsed)) return parsed;
+        
+        return new Date();
+    }
+}
+
+// Initialize database
+const expenseDB = new ExpenseDB();
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Check if user is already logged in
@@ -20,8 +250,15 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             currentUser = JSON.parse(savedUser);
             if (currentUser && currentUser.id) {
-                showDashboard();
-                loadUserData();
+                // Verify user still exists in database
+                const dbUser = expenseDB.getUser(currentUser.id);
+                if (dbUser) {
+                    showDashboard();
+                    loadUserData();
+                    showNotification(`Welcome back, ${currentUser.firstName}!`, 'success');
+                } else {
+                    showLogin();
+                }
             } else {
                 showLogin();
             }
@@ -210,48 +447,78 @@ async function login() {
     }
     
     try {
-        // Get all users from API
-        const response = await fetch(`${API}/users`);
-        const result = await response.json();
+        // First try local database
+        const result = expenseDB.authenticateUser(firstName, lastName, password);
         
-        if (result.success && result.data) {
-            // Find user by first and last name
-            const user = result.data.find(u => 
+        if (result.success) {
+            const user = result.data;
+            
+            currentUser = {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                fullName: user.fullName,
+                initialAmount: user.initialAmount,
+                currentBalance: user.currentBalance,
+                joinDate: user.createdAt
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Show dashboard
+            showDashboard();
+            loadUserData();
+            
+            showNotification(`Welcome back, ${currentUser.firstName}!`, 'success');
+            return;
+        }
+        
+        // If not found in local DB, try API
+        const response = await fetch(`${API}/users`);
+        const apiResult = await response.json();
+        
+        if (apiResult.success && apiResult.data) {
+            const apiUser = apiResult.data.find(u => 
                 u.First_Name.toLowerCase() === firstName.toLowerCase() && 
                 u.Last_Name.toLowerCase() === lastName.toLowerCase()
             );
             
-            if (user) {
-                // In a real app, you would verify password here
-                // For this demo, we'll accept any non-empty password
+            if (apiUser) {
+                // Check if password matches (in this demo, accept any non-empty password)
                 if (password.length < 6) {
                     showNotification('Password must be at least 6 characters', 'warning');
                     return;
                 }
                 
-                // Get user's current balance and transactions
-                const userDetails = await fetch(`${API}/user/${user.id}`).then(r => r.json());
-                const userData = userDetails.success ? userDetails.data : user;
+                // Get user details
+                const userDetails = await fetch(`${API}/user/${apiUser.id}`).then(r => r.json());
+                const userData = userDetails.success ? userDetails.data : apiUser;
                 
-                // Create user object
-                currentUser = {
-                    id: user.id,
-                    firstName: user.First_Name,
-                    lastName: user.Last_Name,
-                    fullName: `${user.First_Name} ${user.Last_Name}`,
-                    initialAmount: userData.Total_Amount || 0,
-                    joinDate: userData.Date || new Date().toLocaleDateString()
-                };
+                // Create user in local database
+                const newUser = expenseDB.createUser(
+                    firstName, 
+                    lastName, 
+                    password, 
+                    userData.Total_Amount || 0
+                );
                 
-                // Save to localStorage
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                // Show dashboard
-                showDashboard();
-                loadUserData();
-                
-                showNotification(`Welcome back, ${currentUser.firstName}!`, 'success');
-                
+                if (newUser.success) {
+                    currentUser = {
+                        id: newUser.data.id,
+                        firstName: newUser.data.firstName,
+                        lastName: newUser.data.lastName,
+                        fullName: newUser.data.fullName,
+                        initialAmount: newUser.data.initialAmount,
+                        currentBalance: newUser.data.currentBalance,
+                        joinDate: newUser.data.createdAt
+                    };
+                    
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showDashboard();
+                    loadUserData();
+                    showNotification(`Welcome back, ${currentUser.firstName}!`, 'success');
+                }
             } else {
                 showNotification('User not found. Please check your name or register.', 'error');
             }
@@ -299,6 +566,7 @@ async function register() {
     }
     
     try {
+        // Try to register in API first
         const today = new Date();
         const day = String(today.getDate()).padStart(2, '0');
         const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -320,28 +588,35 @@ async function register() {
         });
 
         const result = await res.json();
-
+        
+        let userId = null;
         if (result.success) {
+            userId = result.data.id;
+        }
+        
+        // Always create user in local database
+        const dbResult = expenseDB.createUser(firstName, lastName, password, Number(amount));
+        
+        if (dbResult.success) {
+            const user = dbResult.data;
+            
             currentUser = {
-                id: result.data.id,
-                firstName: firstName,
-                lastName: lastName,
-                fullName: `${firstName} ${lastName}`,
-                initialAmount: Number(amount),
-                joinDate: `${day}-${month}-${year}`,
-                password: password
+                id: user.id,
+                apiId: userId,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                fullName: user.fullName,
+                initialAmount: user.initialAmount,
+                currentBalance: user.currentBalance,
+                joinDate: user.createdAt
             };
             
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
             showNotification('Account created successfully!', 'success');
-            
-            // Show dashboard
             showDashboard();
             loadUserData();
-            
         } else {
-            showNotification(result.error || 'Registration failed. User might already exist.', 'error');
+            showNotification(dbResult.error || 'Registration failed. User might already exist.', 'error');
         }
     } catch (error) {
         console.error('Registration error:', error);
@@ -365,74 +640,6 @@ function logout() {
 }
 
 // ===============================
-// GET USER TRANSACTIONS (Permanent Storage)
-// ===============================
-async function getUserTransactions(userId) {
-    try {
-        // Try to get actual transactions from backend if endpoint exists
-        try {
-            const transactionsRes = await fetch(`${API}/user/${userId}/transactions`);
-            if (transactionsRes.ok) {
-                const transactionsResult = await transactionsRes.json();
-                if (transactionsResult.success && transactionsResult.data) {
-                    return transactionsResult.data.map(t => ({
-                        ...t,
-                        date: t.date || getCurrentDate(),
-                        time: t.time || getCurrentTime()
-                    }));
-                }
-            }
-        } catch (e) {
-            // API endpoint doesn't exist, check localStorage
-        }
-        
-        // Local storage madhun data gheta yenara
-        const savedTransactions = localStorage.getItem(`user_${userId}_transactions`);
-        if (savedTransactions) {
-            return JSON.parse(savedTransactions);
-        }
-        
-        // If nothing found, return initial transaction
-        return [{
-            id: 1,
-            type: 'credit',
-            amount: currentUser.initialAmount || 0,
-            description: 'Initial Amount',
-            category: 'Initial',
-            date: currentUser.joinDate || getCurrentDate(),
-            time: getCurrentTime()
-        }];
-        
-    } catch (error) {
-        console.error('Error getting transactions:', error);
-        return [];
-    }
-}
-
-// ===============================
-// SAVE USER TRANSACTIONS
-// ===============================
-function saveUserTransactions(userId, transactions) {
-    try {
-        // Local storage madhe save kara
-        localStorage.setItem(`user_${userId}_transactions`, JSON.stringify(transactions));
-        
-        // Try to save to API if endpoint exists
-        try {
-            fetch(`${API}/user/${userId}/save-transactions`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ transactions: transactions })
-            }).catch(e => console.log('API save endpoint not available'));
-        } catch (e) {
-            // API nahi asel tari chalta
-        }
-    } catch (error) {
-        console.error('Error saving transactions:', error);
-    }
-}
-
-// ===============================
 // LOAD USER DATA
 // ===============================
 async function loadUserData() {
@@ -450,32 +657,25 @@ async function loadUserData() {
             </div>
         `;
         
-        // Get user details
-        const userRes = await fetch(`${API}/user/${currentUser.id}`);
-        const userResult = await userRes.json();
+        // Get transactions from database
+        userTransactions = expenseDB.getUserTransactions(currentUser.id);
         
-        if (!userResult.success) {
-            showNotification('Error loading user data', 'error');
-            return;
-        }
-        
-        const user = userResult.data;
-        
-        // Get transactions from permanent storage
-        userTransactions = await getUserTransactions(currentUser.id);
-        
-        // If no transactions but has initial amount, create initial transaction
-        if (userTransactions.length === 0 && user.Total_Amount > 0) {
-            userTransactions = [{
-                id: 1,
-                type: 'credit',
-                amount: user.Total_Amount,
-                description: 'Initial Amount',
-                category: 'Initial',
-                date: user.Date || getCurrentDate(),
-                time: getCurrentTime()
-            }];
-            saveUserTransactions(currentUser.id, userTransactions);
+        // Try to sync with API if user has API ID
+        if (currentUser.apiId) {
+            try {
+                const userRes = await fetch(`${API}/user/${currentUser.apiId}`);
+                const userResult = await userRes.json();
+                
+                if (userResult.success) {
+                    const apiUser = userResult.data;
+                    
+                    // Update local user balance from API
+                    currentUser.currentBalance = apiUser.Total_Amount || currentUser.initialAmount;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                }
+            } catch (apiError) {
+                console.log('API sync failed, using local data');
+            }
         }
         
         // Calculate totals
@@ -487,7 +687,7 @@ async function loadUserData() {
         // Update transaction list
         updateTransactionList();
         
-        // Update current user with latest data
+        // Update current user data
         currentUser.balance = userStats.currentBalance;
         currentUser.totalAdded = userStats.totalAdded;
         currentUser.totalSpent = userStats.totalSpent;
@@ -495,7 +695,7 @@ async function loadUserData() {
         
     } catch (error) {
         console.error('Error loading user data:', error);
-        showNotification('Connection error. Please try again.', 'error');
+        showNotification('Error loading data. Please try again.', 'error');
         document.getElementById('transactions-list').innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -520,15 +720,6 @@ function getCurrentTime() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
-}
-
-function getPastDate(daysAgo) {
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
 }
 
 // ===============================
@@ -589,53 +780,47 @@ async function addMoney() {
     }
     
     try {
-        // Add money through backend API
-        const res = await fetch(`${API}/add-money-by-name`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                first_name: currentUser.firstName,
-                last_name: currentUser.lastName,
-                add_amount: Number(amount)
-            })
-        });
-
-        const result = await res.json();
+        // Add money to local database
+        const newTransaction = {
+            id: Date.now(),
+            type: 'credit',
+            amount: Number(amount),
+            description: description,
+            category: 'Income',
+            date: getCurrentDate(),
+            time: getCurrentTime()
+        };
         
-        if (result.success) {
-            // Add transaction to local list
-            const newTransaction = {
-                id: Date.now(),
-                type: 'credit',
-                amount: Number(amount),
-                description: description,
-                category: 'Income',
-                date: getCurrentDate(),
-                time: getCurrentTime()
-            };
-            
-            // Get existing transactions first
-            const existingTransactions = await getUserTransactions(currentUser.id);
-            existingTransactions.unshift(newTransaction); // Add to beginning
-            
-            // Save updated transactions
-            userTransactions = existingTransactions;
-            saveUserTransactions(currentUser.id, userTransactions);
-            
-            // Update stats
-            calculateUserStats();
-            updateStatsUI();
-            updateTransactionList();
-            
-            // Clear form
-            document.getElementById('add-amount').value = '';
-            document.getElementById('add-description').value = '';
-            
-            showNotification(`Successfully added $${amount} to your account`, 'success');
-            
-        } else {
-            showNotification(result.error || 'Failed to add money', 'error');
+        // Save to local database
+        expenseDB.addTransaction(currentUser.id, newTransaction);
+        expenseDB.updateUserBalance(currentUser.id, Number(amount));
+        
+        // Try to sync with API if user has API ID
+        if (currentUser.apiId) {
+            try {
+                await fetch(`${API}/add-money-by-name`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        first_name: currentUser.firstName,
+                        last_name: currentUser.lastName,
+                        add_amount: Number(amount)
+                    })
+                });
+            } catch (apiError) {
+                console.log('API sync failed, using local data');
+            }
         }
+        
+        // Reload data
+        loadUserData();
+        
+        // Clear form
+        document.getElementById('add-amount').value = '';
+        document.getElementById('add-description').value = '';
+        
+        showNotification(`Successfully added $${amount} to your account`, 'success');
+        
     } catch (err) {
         console.error(err);
         showNotification('Error adding money', 'error');
@@ -671,54 +856,48 @@ async function addExpense() {
     }
 
     try {
-        // Add expense through backend API
-        const res = await fetch(`${API}/user/${currentUser.id}/expense`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                expense: Number(amount),
-                category: category,
-                description: description
-            })
-        });
-
-        const result = await res.json();
+        // Add expense to local database
+        const newTransaction = {
+            id: Date.now(),
+            type: 'debit',
+            amount: Number(amount),
+            description: description,
+            category: category,
+            date: getCurrentDate(),
+            time: getCurrentTime()
+        };
         
-        if (result.success) {
-            // Add transaction to local list
-            const newTransaction = {
-                id: Date.now(),
-                type: 'debit',
-                amount: Number(amount),
-                description: description,
-                category: category,
-                date: getCurrentDate(),
-                time: getCurrentTime()
-            };
-            
-            // Get existing transactions first
-            const existingTransactions = await getUserTransactions(currentUser.id);
-            existingTransactions.unshift(newTransaction); // Add to beginning
-            
-            // Save updated transactions
-            userTransactions = existingTransactions;
-            saveUserTransactions(currentUser.id, userTransactions);
-            
-            // Update stats
-            calculateUserStats();
-            updateStatsUI();
-            updateTransactionList();
-            
-            // Clear form
-            document.getElementById('expense-amount').value = '';
-            document.getElementById('expense-category').value = '';
-            document.getElementById('expense-description').value = '';
-            
-            showNotification(`Expense of $${amount} added successfully`, 'success');
-            
-        } else {
-            showNotification(result.error || 'Failed to add expense', 'error');
+        // Save to local database
+        expenseDB.addTransaction(currentUser.id, newTransaction);
+        expenseDB.updateUserBalance(currentUser.id, -Number(amount));
+        
+        // Try to sync with API if user has API ID
+        if (currentUser.apiId) {
+            try {
+                await fetch(`${API}/user/${currentUser.apiId}/expense`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        expense: Number(amount),
+                        category: category,
+                        description: description
+                    })
+                });
+            } catch (apiError) {
+                console.log('API sync failed, using local data');
+            }
         }
+        
+        // Reload data
+        loadUserData();
+        
+        // Clear form
+        document.getElementById('expense-amount').value = '';
+        document.getElementById('expense-category').value = '';
+        document.getElementById('expense-description').value = '';
+        
+        showNotification(`Expense of $${amount} added successfully`, 'success');
+        
     } catch (err) {
         console.error(err);
         showNotification('Error adding expense', 'error');
@@ -726,7 +905,7 @@ async function addExpense() {
 }
 
 // ===============================
-// GENERATE REPORT WITH TABLE
+// GENERATE REPORT
 // ===============================
 function generateReport() {
     if (!currentUser) {
@@ -756,9 +935,18 @@ function generateReport() {
     }
     
     const type = document.getElementById('report-type').value;
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
     
-    // Filter transactions based on period and type
-    let filteredTransactions = filterTransactionsByPeriodAndType(period, type);
+    // Filter transactions
+    const filters = {
+        period: period,
+        type: type,
+        startDate: startDate,
+        endDate: endDate
+    };
+    
+    const filteredTransactions = expenseDB.getFilteredTransactions(currentUser.id, filters);
     
     if (filteredTransactions.length === 0) {
         document.getElementById('report-summary').innerHTML = `
@@ -783,65 +971,6 @@ function generateReport() {
     
     // Add custom styles for table
     addTableStyles();
-}
-
-// Filter transactions by period and type
-function filterTransactionsByPeriodAndType(period, type) {
-    let filteredTransactions = [...userTransactions];
-    
-    // Filter by type
-    if (type !== 'all') {
-        filteredTransactions = filteredTransactions.filter(t => t.type === type);
-    }
-    
-    // Filter by period
-    if (period !== 'all') {
-        const today = new Date();
-        let startDate = new Date();
-        
-        switch(period) {
-            case 'today':
-                startDate.setHours(0, 0, 0, 0);
-                filteredTransactions = filteredTransactions.filter(t => {
-                    const transDate = parseDate(t.date);
-                    return transDate >= startDate;
-                });
-                break;
-            case 'week':
-                startDate.setDate(today.getDate() - 7);
-                break;
-            case 'month':
-                startDate.setMonth(today.getMonth() - 1);
-                break;
-            case 'year':
-                startDate.setFullYear(today.getFullYear() - 1);
-                break;
-            case 'custom':
-                const startInput = document.getElementById('start-date').value;
-                const endInput = document.getElementById('end-date').value;
-                
-                if (startInput && endInput) {
-                    const start = new Date(startInput);
-                    const end = new Date(endInput);
-                    end.setHours(23, 59, 59, 999);
-                    
-                    filteredTransactions = filteredTransactions.filter(t => {
-                        const transDate = parseDate(t.date);
-                        return transDate >= start && transDate <= end;
-                    });
-                }
-                break;
-        }
-        
-        if (period !== 'today' && period !== 'custom') {
-            filteredTransactions = filteredTransactions.filter(t => {
-                const transDate = parseDate(t.date);
-                return transDate >= startDate;
-            });
-        }
-    }
-    
-    return filteredTransactions;
 }
 
 // Calculate report totals
@@ -1062,15 +1191,9 @@ function addTableStyles() {
 // ===============================
 // PDF DOWNLOAD FUNCTION
 // ===============================
-function downloadReport() {
+function downloadPDFReport() {
     if (!currentUser) {
         showNotification('Please login first', 'warning');
-        return;
-    }
-    
-    const reportContent = document.getElementById('report-summary');
-    if (!reportContent || reportContent.querySelector('.empty-report')) {
-        showNotification('No report to download. Please generate a report first.', 'warning');
         return;
     }
     
@@ -1078,9 +1201,18 @@ function downloadReport() {
         // Get filter values
         const period = document.getElementById('report-period').value;
         const type = document.getElementById('report-type').value;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
         
-        // Get filtered transactions
-        const filteredTransactions = filterTransactionsByPeriodAndType(period, type);
+        // Filter transactions
+        const filters = {
+            period: period,
+            type: type,
+            startDate: startDate,
+            endDate: endDate
+        };
+        
+        const filteredTransactions = expenseDB.getFilteredTransactions(currentUser.id, filters);
         
         if (filteredTransactions.length === 0) {
             showNotification('No transactions to download', 'warning');
@@ -1433,29 +1565,7 @@ function formatNumber(num) {
 }
 
 function parseDate(dateStr) {
-    if (!dateStr) return new Date();
-    
-    // Try different date formats
-    if (dateStr.includes('-')) {
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-            // Check if format is DD-MM-YYYY or YYYY-MM-DD
-            if (parts[0].length === 4) {
-                // YYYY-MM-DD format
-                return new Date(parts[0], parts[1] - 1, parts[2]);
-            } else {
-                // DD-MM-YYYY format
-                return new Date(parts[2], parts[1] - 1, parts[0]);
-            }
-        }
-    }
-    
-    // Try parsing as ISO string
-    const parsed = new Date(dateStr);
-    if (!isNaN(parsed)) return parsed;
-    
-    // Return current date as fallback
-    return new Date();
+    return expenseDB.parseDate(dateStr);
 }
 
 // Initialize the page
