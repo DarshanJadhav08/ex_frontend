@@ -64,7 +64,7 @@ class ExpenseDB {
             category: 'Initial',
             date: this.getCurrentDate(),
             time: this.getCurrentTime(),
-            isInitial: true  // Mark as initial transaction
+            isInitial: true
         });
         
         return { success: true, data: user };
@@ -222,12 +222,9 @@ class ExpenseDB {
         if (dateStr.includes('-')) {
             const parts = dateStr.split('-');
             if (parts.length === 3) {
-                // Check if format is DD-MM-YYYY or YYYY-MM-DD
                 if (parts[0].length === 4) {
-                    // YYYY-MM-DD format
                     return new Date(parts[0], parts[1] - 1, parts[2]);
                 } else {
-                    // DD-MM-YYYY format
                     return new Date(parts[2], parts[1] - 1, parts[0]);
                 }
             }
@@ -251,7 +248,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             currentUser = JSON.parse(savedUser);
             if (currentUser && currentUser.id) {
-                // Verify user still exists in database
                 const dbUser = expenseDB.getUser(currentUser.id);
                 if (dbUser) {
                     showDashboard();
@@ -313,7 +309,7 @@ function setupCustomDateRange() {
         periodSelect.addEventListener('change', function() {
             const customRangeDiv = document.getElementById('custom-date-range');
             if (this.value === 'custom') {
-                customRangeDiv.style.display = 'flex';
+                customRangeDiv.classList.add('show');
                 
                 // Set default dates (last 30 days)
                 const endDate = new Date();
@@ -323,7 +319,7 @@ function setupCustomDateRange() {
                 document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
                 document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
             } else {
-                customRangeDiv.style.display = 'none';
+                customRangeDiv.classList.remove('show');
             }
         });
     }
@@ -492,22 +488,17 @@ async function login() {
             );
             
             if (apiUser) {
-                // Check if password matches (in this demo, accept any non-empty password)
                 if (password.length < 6) {
                     showNotification('Password must be at least 6 characters', 'warning');
                     return;
                 }
-                
-                // Get user details
-                const userDetails = await fetch(`${API}/user/${apiUser.id}`).then(r => r.json());
-                const userData = userDetails.success ? userDetails.data : apiUser;
                 
                 // Create user in local database
                 const newUser = expenseDB.createUser(
                     firstName, 
                     lastName, 
                     password, 
-                    userData.Total_Amount || 0
+                    apiUser.Total_Amount || 0
                 );
                 
                 if (newUser.success) {
@@ -538,6 +529,9 @@ async function login() {
     }
 }
 
+// ===============================
+// REGISTRATION - OPTIMIZED (FASTER)
+// ===============================
 async function register() {
     const firstName = document.getElementById('reg-firstname').value.trim();
     const lastName = document.getElementById('reg-lastname').value.trim();
@@ -572,37 +566,60 @@ async function register() {
         return;
     }
     
+    // Show loading state
+    const registerBtn = document.querySelector('.register-form .btn-success');
+    const originalText = registerBtn.innerHTML;
+    registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Creating Account...</span>';
+    registerBtn.disabled = true;
+    
     try {
-        // Try to register in API first
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, '0');
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const year = today.getFullYear();
+        const amountNum = parseFloat(amount);
+        const userId = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
         
-        const body = {
-            First_Name: firstName,
-            Last_Name: lastName,
-            Total_Amount: parseFloat(amount),
-            Date: `${day}-${month}-${year}`,
-            Month: month,
-            Year: year
-        };
-
-        const res = await fetch(`${API}/user`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
-        });
-
-        const result = await res.json();
-        
-        let apiId = null;
-        if (result.success) {
-            apiId = result.data.id;
+        // Check if user already exists in local database
+        const existingUser = expenseDB.getUser(userId);
+        if (existingUser) {
+            showNotification('User already exists. Please login instead.', 'error');
+            registerBtn.innerHTML = originalText;
+            registerBtn.disabled = false;
+            return;
         }
         
-        // Create user in local database
-        const dbResult = expenseDB.createUser(firstName, lastName, password, parseFloat(amount));
+        // Try API registration in background (non-blocking)
+        let apiId = null;
+        const apiPromise = (async () => {
+            try {
+                const today = new Date();
+                const day = String(today.getDate()).padStart(2, '0');
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const year = today.getFullYear();
+                
+                const body = {
+                    First_Name: firstName,
+                    Last_Name: lastName,
+                    Total_Amount: amountNum,
+                    Date: `${day}-${month}-${year}`,
+                    Month: month,
+                    Year: year
+                };
+
+                const res = await fetch(`${API}/user`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    apiId = result.data.id;
+                }
+            } catch (error) {
+                console.log('API registration failed, using local only');
+            }
+        })();
+
+        // Create user immediately in local database (FAST)
+        const dbResult = expenseDB.createUser(firstName, lastName, password, amountNum);
         
         if (dbResult.success) {
             const user = dbResult.data;
@@ -619,15 +636,29 @@ async function register() {
             };
             
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Show success and go to dashboard IMMEDIATELY
             showNotification('Account created successfully!', 'success');
+            
+            // Go to dashboard without waiting for API
             showDashboard();
-            loadUserData();
+            
+            // Load data in background
+            setTimeout(() => {
+                loadUserData();
+            }, 100);
+            
         } else {
-            showNotification(dbResult.error || 'Registration failed. User might already exist.', 'error');
+            showNotification(dbResult.error || 'Registration failed', 'error');
+            registerBtn.innerHTML = originalText;
+            registerBtn.disabled = false;
         }
+        
     } catch (error) {
         console.error('Registration error:', error);
         showNotification('Network error. Please check your connection.', 'error');
+        registerBtn.innerHTML = originalText;
+        registerBtn.disabled = false;
     }
 }
 
@@ -647,7 +678,7 @@ function logout() {
 }
 
 // ===============================
-// LOAD USER DATA (FIXED - No Double Counting)
+// LOAD USER DATA
 // ===============================
 async function loadUserData() {
     if (!currentUser || !currentUser.id) {
@@ -703,7 +734,7 @@ async function loadUserData() {
 }
 
 // ===============================
-// CALCULATE USER STATS (FIXED - No Double Counting)
+// CALCULATE USER STATS
 // ===============================
 function calculateUserStats() {
     let totalAdded = 0;
@@ -917,7 +948,7 @@ function getCurrentTime() {
 }
 
 // ===============================
-// GENERATE REPORT
+// GENERATE REPORT - IMPROVED (SHOWS REPORT IMMEDIATELY)
 // ===============================
 function generateReport() {
     if (!currentUser) {
@@ -925,24 +956,36 @@ function generateReport() {
         return;
     }
     
+    // Show loading state
+    const reportSummary = document.getElementById('report-summary');
+    const generateBtn = document.getElementById('generate-report-btn');
+    const originalBtnContent = generateBtn.innerHTML;
+    
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Generating...</span>';
+    generateBtn.disabled = true;
+    
     // Show custom date range if selected
     const period = document.getElementById('report-period').value;
     const customRangeDiv = document.getElementById('custom-date-range');
     if (period === 'custom') {
-        customRangeDiv.style.display = 'flex';
+        customRangeDiv.classList.add('show');
     } else {
-        customRangeDiv.style.display = 'none';
+        customRangeDiv.classList.remove('show');
     }
     
     if (userTransactions.length === 0) {
-        document.getElementById('report-summary').innerHTML = `
-            <div class="empty-report">
-                <i class="fas fa-chart-bar"></i>
-                <h3>No Transactions Found</h3>
-                <p>You haven't made any transactions yet. Start by adding money or expenses.</p>
-            </div>
-        `;
-        document.getElementById('download-report-btn').style.display = 'none';
+        setTimeout(() => {
+            reportSummary.innerHTML = `
+                <div class="empty-report">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>No Transactions Found</h3>
+                    <p>You haven't made any transactions yet. Start by adding money or expenses.</p>
+                </div>
+            `;
+            document.getElementById('download-report-btn').style.display = 'none';
+            generateBtn.innerHTML = originalBtnContent;
+            generateBtn.disabled = false;
+        }, 300);
         return;
     }
     
@@ -961,28 +1004,41 @@ function generateReport() {
     const filteredTransactions = expenseDB.getFilteredTransactions(currentUser.id, filters);
     
     if (filteredTransactions.length === 0) {
-        document.getElementById('report-summary').innerHTML = `
-            <div class="empty-report">
-                <i class="fas fa-filter"></i>
-                <h3>No Transactions Found</h3>
-                <p>No transactions match your filter criteria. Try changing your filters.</p>
-            </div>
-        `;
-        document.getElementById('download-report-btn').style.display = 'none';
+        setTimeout(() => {
+            reportSummary.innerHTML = `
+                <div class="empty-report">
+                    <i class="fas fa-filter"></i>
+                    <h3>No Transactions Found</h3>
+                    <p>No transactions match your filter criteria. Try changing your filters.</p>
+                </div>
+            `;
+            document.getElementById('download-report-btn').style.display = 'none';
+            generateBtn.innerHTML = originalBtnContent;
+            generateBtn.disabled = false;
+        }, 300);
         return;
     }
     
     // Calculate report totals
     const reportTotals = calculateReportTotals(filteredTransactions);
     
-    // Create report with table
-    const reportHTML = createReportHTML(reportTotals, filteredTransactions);
-    
-    document.getElementById('report-summary').innerHTML = reportHTML;
-    document.getElementById('download-report-btn').style.display = 'flex';
-    
-    // Add custom styles for table
-    addTableStyles();
+    // Create report with mobile-friendly design
+    setTimeout(() => {
+        const reportHTML = createMobileFriendlyReport(reportTotals, filteredTransactions);
+        
+        reportSummary.innerHTML = reportHTML;
+        document.getElementById('download-report-btn').style.display = 'flex';
+        
+        // Initialize view toggle
+        initializeViewToggle();
+        
+        generateBtn.innerHTML = originalBtnContent;
+        generateBtn.disabled = false;
+        
+        // Add CSS for the generated report
+        addReportStyles();
+        
+    }, 300);
 }
 
 // Calculate report totals
@@ -1011,8 +1067,10 @@ function calculateReportTotals(transactions) {
     };
 }
 
-// Create report HTML with table
-function createReportHTML(totals, transactions) {
+// ===============================
+// CREATE MOBILE FRIENDLY REPORT
+// ===============================
+function createMobileFriendlyReport(totals, transactions) {
     // Sort transactions by date (newest first)
     transactions.sort((a, b) => {
         const dateA = parseDate(a.date);
@@ -1031,8 +1089,8 @@ function createReportHTML(totals, transactions) {
         });
     }
     
-    // Create table rows
-    let tableRows = '';
+    // Create mobile transaction cards
+    let mobileCardsHTML = '';
     transactions.forEach((transaction, index) => {
         const isCredit = transaction.type === 'credit';
         const date = formatDisplayDate(transaction.date);
@@ -1040,7 +1098,59 @@ function createReportHTML(totals, transactions) {
         const month = transaction.date ? transaction.date.split('-')[1] : 'N/A';
         const year = transaction.date ? transaction.date.split('-')[2] : 'N/A';
         
-        tableRows += `
+        mobileCardsHTML += `
+            <div class="transaction-card ${isCredit ? 'credit' : 'debit'}">
+                <div class="transaction-card-header">
+                    <span class="transaction-type-badge ${isCredit ? 'credit' : 'debit'}">
+                        ${isCredit ? 'Credit' : 'Debit'}
+                    </span>
+                    <span class="transaction-amount-mobile ${isCredit ? 'positive' : 'negative'}">
+                        ${isCredit ? '+' : '-'}$${formatNumber(transaction.amount || 0)}
+                    </span>
+                </div>
+                <div class="transaction-card-body">
+                    <div class="transaction-info">
+                        <div class="transaction-info-row">
+                            <span class="transaction-info-label">Date:</span>
+                            <span class="transaction-info-value">${date}</span>
+                        </div>
+                        <div class="transaction-info-row">
+                            <span class="transaction-info-label">Time:</span>
+                            <span class="transaction-info-value">${time}</span>
+                        </div>
+                    </div>
+                    <div class="transaction-info">
+                        <div class="transaction-info-row">
+                            <span class="transaction-info-label">Month:</span>
+                            <span class="transaction-info-value">${month}</span>
+                        </div>
+                        <div class="transaction-info-row">
+                            <span class="transaction-info-label">Year:</span>
+                            <span class="transaction-info-value">${year}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="transaction-description">
+                    <strong>Description:</strong> ${transaction.description || 'No description'}
+                </div>
+                <div class="transaction-info-row" style="margin-top: 8px;">
+                    <span class="transaction-info-label">Category:</span>
+                    <span class="transaction-info-value">${transaction.category || 'General'}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    // Create desktop table rows
+    let desktopTableRows = '';
+    transactions.forEach((transaction, index) => {
+        const isCredit = transaction.type === 'credit';
+        const date = formatDisplayDate(transaction.date);
+        const time = transaction.time || 'N/A';
+        const month = transaction.date ? transaction.date.split('-')[1] : 'N/A';
+        const year = transaction.date ? transaction.date.split('-')[2] : 'N/A';
+        
+        desktopTableRows += `
             <tr>
                 <td>${index + 1}</td>
                 <td>
@@ -1058,7 +1168,7 @@ function createReportHTML(totals, transactions) {
                     <div>Month: <strong>${month}</strong></div>
                     <div>Year: <strong>${year}</strong></div>
                 </td>
-                <td class="description" title="${transaction.description || 'No description'}">
+                <td class="description-cell" title="${transaction.description || 'No description'}">
                     ${transaction.description || 'No description'}
                 </td>
                 <td>${transaction.category || 'General'}</td>
@@ -1093,8 +1203,24 @@ function createReportHTML(totals, transactions) {
                 </div>
             </div>
             
+            <!-- View Toggle for Mobile -->
+            <div class="report-view-toggle">
+                <button class="view-toggle-btn active" onclick="switchReportView('cards')">
+                    <i class="fas fa-th-large"></i> Cards
+                </button>
+                <button class="view-toggle-btn" onclick="switchReportView('table')">
+                    <i class="fas fa-table"></i> Table
+                </button>
+            </div>
+            
+            <!-- Mobile Cards View -->
+            <div id="mobile-cards-view" class="mobile-view">
+                ${mobileCardsHTML}
+            </div>
+            
+            <!-- Desktop Table View -->
             <div class="report-table-container">
-                <table class="report-table">
+                <table class="report-table-desktop">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -1108,7 +1234,7 @@ function createReportHTML(totals, transactions) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${tableRows}
+                        ${desktopTableRows}
                     </tbody>
                     <tfoot>
                         <tr>
@@ -1138,6 +1264,26 @@ function createReportHTML(totals, transactions) {
                 </table>
             </div>
             
+            <!-- Mobile Totals View -->
+            <div class="report-totals-mobile">
+                <div class="report-totals-card">
+                    <div class="report-totals-row">
+                        <span class="report-totals-label">Total Added:</span>
+                        <span class="report-totals-value positive">$${formatNumber(totals.totalAdded)}</span>
+                    </div>
+                    <div class="report-totals-row">
+                        <span class="report-totals-label">Total Spent:</span>
+                        <span class="report-totals-value negative">$${formatNumber(totals.totalSpent)}</span>
+                    </div>
+                    <div class="report-totals-row" style="border-top: 2px solid var(--primary); padding-top: 12px; margin-top: 8px;">
+                        <span class="report-totals-label">Net Balance:</span>
+                        <span class="report-totals-value ${totals.netBalance >= 0 ? 'positive' : 'negative'}" style="font-size: 18px;">
+                            $${formatNumber(totals.netBalance)}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
             <div class="report-info">
                 <p><i class="fas fa-info-circle"></i> Showing ${transactions.length} transactions</p>
                 <p><i class="fas fa-calendar"></i> Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
@@ -1147,56 +1293,95 @@ function createReportHTML(totals, transactions) {
     `;
 }
 
-// Add table styles
-function addTableStyles() {
+// ===============================
+// INITIALIZE VIEW TOGGLE
+// ===============================
+function initializeViewToggle() {
+    const cardsView = document.getElementById('mobile-cards-view');
+    const tableView = document.querySelector('.report-table-container');
+    const totalsView = document.querySelector('.report-totals-mobile');
+    
+    if (!cardsView || !tableView) return;
+    
+    // Check screen size and set initial view
+    if (window.innerWidth <= 767) {
+        // Mobile - Show cards by default
+        cardsView.style.display = 'block';
+        tableView.style.display = 'none';
+        if (totalsView) totalsView.style.display = 'block';
+    } else {
+        // Desktop - Show table by default
+        cardsView.style.display = 'none';
+        tableView.style.display = 'block';
+        if (totalsView) totalsView.style.display = 'none';
+    }
+}
+
+// ===============================
+// SWITCH REPORT VIEW (MOBILE)
+// ===============================
+function switchReportView(viewType) {
+    const cardsView = document.getElementById('mobile-cards-view');
+    const tableView = document.querySelector('.report-table-container');
+    const totalsView = document.querySelector('.report-totals-mobile');
+    const cardButtons = document.querySelectorAll('.view-toggle-btn');
+    
+    if (!cardsView || !tableView) return;
+    
+    cardButtons.forEach(btn => btn.classList.remove('active'));
+    
+    if (viewType === 'cards') {
+        cardsView.style.display = 'block';
+        tableView.style.display = 'none';
+        if (totalsView) totalsView.style.display = 'block';
+        document.querySelector('.view-toggle-btn:nth-child(1)').classList.add('active');
+    } else {
+        cardsView.style.display = 'none';
+        tableView.style.display = 'block';
+        if (totalsView) totalsView.style.display = 'none';
+        document.querySelector('.view-toggle-btn:nth-child(2)').classList.add('active');
+    }
+}
+
+// ===============================
+// ADD REPORT STYLES
+// ===============================
+function addReportStyles() {
     const style = document.createElement('style');
     style.textContent = `
-        .report-content {
-            animation: fadeInUp 0.5s ease;
+        .mobile-view {
+            animation: fadeIn 0.5s ease;
         }
         
-        .report-info {
-            margin-top: 20px;
-            padding: 15px;
-            background: var(--light);
-            border-radius: var(--border-radius-sm);
-            font-size: 14px;
-            color: var(--gray);
+        .report-table-container::-webkit-scrollbar {
+            height: 6px;
         }
         
-        .report-info p {
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .report-table-container::-webkit-scrollbar-track {
+            background: var(--light-gray);
+            border-radius: 10px;
         }
         
-        .report-info i {
-            color: var(--primary);
+        .report-table-container::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
         }
         
-        table tfoot {
-            background: white;
-            border-top: 2px solid var(--primary);
+        .report-table-container::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
         }
         
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     `;
     
     // Remove existing style if any
-    const existingStyle = document.getElementById('table-report-style');
+    const existingStyle = document.getElementById('report-custom-styles');
     if (existingStyle) existingStyle.remove();
     
-    style.id = 'table-report-style';
+    style.id = 'report-custom-styles';
     document.head.appendChild(style);
 }
 
@@ -1579,6 +1764,38 @@ function formatNumber(num) {
 function parseDate(dateStr) {
     return expenseDB.parseDate(dateStr);
 }
+
+// ===============================
+// ADD RESIZE EVENT LISTENER
+// ===============================
+window.addEventListener('resize', function() {
+    const cardsView = document.getElementById('mobile-cards-view');
+    const tableView = document.querySelector('.report-table-container');
+    const totalsView = document.querySelector('.report-totals-mobile');
+    
+    if (!cardsView || !tableView) return;
+    
+    if (window.innerWidth <= 767) {
+        // Mobile
+        const activeView = document.querySelector('.view-toggle-btn.active');
+        if (activeView) {
+            if (activeView.textContent.includes('Cards')) {
+                cardsView.style.display = 'block';
+                tableView.style.display = 'none';
+                if (totalsView) totalsView.style.display = 'block';
+            } else {
+                cardsView.style.display = 'none';
+                tableView.style.display = 'block';
+                if (totalsView) totalsView.style.display = 'none';
+            }
+        }
+    } else {
+        // Desktop - always show table
+        cardsView.style.display = 'none';
+        tableView.style.display = 'block';
+        if (totalsView) totalsView.style.display = 'none';
+    }
+});
 
 // Initialize the page
 window.onload = function() {
