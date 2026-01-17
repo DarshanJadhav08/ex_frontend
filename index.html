@@ -1,373 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Manager | Personal Finance Tracker</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <!-- Notification Container -->
-    <div id="notification-container"></div>
+  <div class="container">
+    <header>
+      <h1>Expense Tracker</h1>
+      <p class="subtitle">Track your income and expenses with ease</p>
+    </header>
 
-    <!-- Login Section (Visible by default) -->
-    <div id="login-section" class="section active">
-        <div class="login-container">
-            <div class="login-card">
-                <div class="brand">
-                    <i class="fas fa-chart-pie"></i>
-                    <h1>Expense Manager</h1>
-                    <p class="subtitle">Track your personal expenses</p>
-                </div>
-
-                <div class="login-form">
-                    <h2>Sign In to Your Account</h2>
-                    
-                    <div class="form-group">
-                        <label for="login-firstname">
-                            <i class="fas fa-user"></i>
-                            <span>First Name</span>
-                        </label>
-                        <input type="text" id="login-firstname" placeholder="Enter your first name">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="login-lastname">
-                            <i class="fas fa-user"></i>
-                            <span>Last Name</span>
-                        </label>
-                        <input type="text" id="login-lastname" placeholder="Enter your last name">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="login-password">
-                            <i class="fas fa-lock"></i>
-                            <span>Password</span>
-                        </label>
-                        <input type="password" id="login-password" placeholder="Enter your password">
-                    </div>
-
-                    <div class="form-options">
-                        <label class="checkbox">
-                            <input type="checkbox" id="remember-me">
-                            <span class="checkmark"></span>
-                            <span>Remember me</span>
-                        </label>
-                        <a href="#" class="forgot-password">Forgot password?</a>
-                    </div>
-
-                    <button class="btn btn-primary btn-block" onclick="login()">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span>Sign In</span>
-                    </button>
-
-                    <div class="register-link">
-                        <p>Don't have an account? <a href="#" onclick="showRegister()">Register here</a></p>
-                    </div>
-                </div>
-            </div>
+    <!-- Auth Section (shown initially) -->
+    <div id="auth-section" class="auth-section">
+      <!-- Login Card -->
+      <div id="login-card" class="auth-card login">
+        <div class="auth-header">
+          <div class="auth-icon">✓</div>
+          <h2>Login to Your Account</h2>
         </div>
+        <div class="form-group">
+          <label for="l_fname">First Name</label>
+          <input id="l_fname" placeholder="Enter your first name">
+        </div>
+        <div class="form-group">
+          <label for="l_lname">Last Name</label>
+          <input id="l_lname" placeholder="Enter your last name">
+        </div>
+        <div class="form-group">
+          <label for="l_pass">Password</label>
+          <input id="l_pass" type="password" placeholder="Enter your password">
+        </div>
+        <button id="login-btn" class="btn btn-success" onclick="login()">Login</button>
+        <div class="auth-toggle">
+          Don't have an account? <a id="show-register">Register here</a>
+        </div>
+      </div>
+
+      <!-- Register Card (hidden initially) -->
+      <div id="register-card" class="auth-card hidden">
+        <div class="auth-header">
+          <div class="auth-icon">+</div>
+          <h2>Create New Account</h2>
+        </div>
+        <div class="form-group">
+          <label for="r_fname">First Name</label>
+          <input id="r_fname" placeholder="Enter your first name">
+        </div>
+        <div class="form-group">
+          <label for="r_lname">Last Name</label>
+          <input id="r_lname" placeholder="Enter your last name">
+        </div>
+        <div class="form-group">
+          <label for="r_pass">Password</label>
+          <input id="r_pass" type="password" placeholder="Create a password">
+        </div>
+        <div class="form-group">
+          <label for="r_amount">Initial Amount</label>
+          <input id="r_amount" type="number" placeholder="e.g. 5000" value="1000">
+        </div>
+        <button id="register-btn" class="btn btn-primary" onclick="register()">Register</button>
+        <div class="auth-toggle">
+          Already have an account? <a id="show-login">Login here</a>
+        </div>
+      </div>
     </div>
 
-    <!-- Register Section -->
-    <div id="register-section" class="section">
-        <div class="register-container">
-            <div class="register-card">
-                <div class="back-to-login">
-                    <button class="btn-back" onclick="showLogin()">
-                        <i class="fas fa-arrow-left"></i>
-                        <span>Back to Login</span>
-                    </button>
-                </div>
-
-                <div class="brand">
-                    <i class="fas fa-user-plus"></i>
-                    <h1>Create Account</h1>
-                    <p class="subtitle">Join Expense Manager today</p>
-                </div>
-
-                <div class="register-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="reg-firstname">
-                                <i class="fas fa-user"></i>
-                                <span>First Name</span>
-                            </label>
-                            <input type="text" id="reg-firstname" placeholder="John">
-                        </div>
-                        <div class="form-group">
-                            <label for="reg-lastname">
-                                <i class="fas fa-user"></i>
-                                <span>Last Name</span>
-                            </label>
-                            <input type="text" id="reg-lastname" placeholder="Doe">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reg-password">
-                            <i class="fas fa-lock"></i>
-                            <span>Password</span>
-                        </label>
-                        <input type="password" id="reg-password" placeholder="Create a password">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reg-confirm-password">
-                            <i class="fas fa-lock"></i>
-                            <span>Confirm Password</span>
-                        </label>
-                        <input type="password" id="reg-confirm-password" placeholder="Confirm your password">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reg-amount">
-                            <i class="fas fa-wallet"></i>
-                            <span>Initial Balance</span>
-                        </label>
-                        <div class="input-with-icon">
-                            <span class="currency">$</span>
-                            <input type="number" id="reg-amount" placeholder="0.00" step="0.01">
-                        </div>
-                    </div>
-
-                    <div class="terms">
-                        <label class="checkbox">
-                            <input type="checkbox" id="agree-terms">
-                            <span class="checkmark"></span>
-                            <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
-                        </label>
-                    </div>
-
-                    <button class="btn btn-success btn-block" onclick="register()">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Create Account</span>
-                    </button>
-                </div>
-            </div>
+    <!-- Main Content (shown after login) -->
+    <div id="main-content" class="main-content">
+      <!-- User Info -->
+      <div class="user-info">
+        <div class="user-details">
+          <h3 id="user-name">Welcome, User</h3>
+          <div class="user-balance">Balance: $<span id="current-balance">0</span></div>
         </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+
+      <!-- Actions Section -->
+      <div class="actions-section">
+        <!-- Add Amount -->
+        <div class="action-card">
+          <div class="action-title">
+            <div class="action-icon">+$</div>
+            <h3>Add Income</h3>
+          </div>
+          <div class="form-group">
+            <label for="amount">Amount</label>
+            <input id="amount" type="number" placeholder="Enter amount">
+          </div>
+          <div class="form-group">
+            <label for="desc">Description</label>
+            <input id="desc" placeholder="e.g., Salary, Gift, etc.">
+          </div>
+          <button class="btn btn-primary" onclick="addAmount()">Add Income</button>
+        </div>
+
+        <!-- Add Expense -->
+        <div class="action-card expense">
+          <div class="action-title">
+            <div class="action-icon">-$</div>
+            <h3>Add Expense</h3>
+          </div>
+          <div class="form-group">
+            <label for="expense-amount">Amount</label>
+            <input id="expense-amount" type="number" placeholder="Enter amount">
+          </div>
+          <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category">
+              <option value="Food">Food</option>
+              <option value="Transport">Transport</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Bills">Bills</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Education">Education</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="expense-desc">Description</label>
+            <input id="expense-desc" placeholder="e.g., Lunch, Uber ride, etc.">
+          </div>
+          <button class="btn btn-success" onclick="addExpense()">Add Expense</button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="action-card stats">
+          <div class="action-title">
+            <div class="action-icon">📊</div>
+            <h3>Quick Stats</h3>
+          </div>
+          <div class="stats-cards">
+            <div class="stat-card">
+              <div class="stat-value income-stat" id="total-income">$0</div>
+              <div class="stat-label">Total Income</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value expense-stat" id="total-expense">$0</div>
+              <div class="stat-label">Total Expenses</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value balance-stat" id="net-balance">$0</div>
+              <div class="stat-label">Net Balance</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="quickStats()" style="margin-top: 20px;">Refresh Stats</button>
+        </div>
+
+        <!-- Generate Report -->
+        <div class="action-card report">
+          <div class="action-title">
+            <div class="action-icon">📄</div>
+            <h3>Generate Report</h3>
+          </div>
+          <p style="color: #7f8c8d; margin-bottom: 20px;">Generate a detailed report of your financial activities.</p>
+          <button class="btn btn-success" onclick="getReport()">Generate Report</button>
+          <button class="btn btn-primary" onclick="downloadReport()" style="margin-top: 10px;">Download PDF</button>
+        </div>
+      </div>
+
+      <!-- Report Section -->
+      <div id="report-section" class="report-section">
+        <div class="report-header">
+          <div class="report-title">Financial Report</div>
+          <button class="download-btn" onclick="downloadReport()">
+            <span>📥</span> Download PDF
+          </button>
+        </div>
+        <div id="report-content">
+          <!-- Report will be displayed here -->
+        </div>
+      </div>
+
+      <!-- Output Section -->
+      <div id="output-section" class="output-section">
+        <div class="output-header">
+          <div class="output-title">API Response</div>
+          <button class="clear-btn" onclick="clearOutput()">Clear</button>
+        </div>
+        <pre id="output"></pre>
+      </div>
     </div>
 
-    <!-- Main Dashboard Section (Hidden by default) -->
-    <div id="dashboard-section" class="section">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <div class="header-left">
-                <div class="logo">
-                    <i class="fas fa-chart-pie"></i>
-                    <h1>Expense Manager</h1>
-                </div>
-                <div class="user-welcome">
-                    <h2>Welcome, <span id="welcome-user">User</span></h2>
-                    <p class="user-balance">Current Balance: <span id="current-balance">$0.00</span></p>
-                </div>
-            </div>
-            <div class="header-right">
-                <div class="user-info">
-                    <div class="user-avatar" id="user-avatar">U</div>
-                    <div class="user-details">
-                        <span class="user-name" id="user-fullname">User Name</span>
-                        <span class="user-email" id="user-email">user@example.com</span>
-                    </div>
-                </div>
-                <button class="btn-logout" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </div>
-        </header>
+    <footer>
+      <p>Expense Tracker &copy; 2023 | Track your finances efficiently</p>
+    </footer>
+  </div>
 
-        <div class="container">
-            <!-- Quick Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon total-added">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Total Added</h3>
-                        <p class="stat-value" id="total-added">$0.00</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon total-spent">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Total Spent</h3>
-                        <p class="stat-value" id="total-spent">$0.00</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon total-transactions">
-                        <i class="fas fa-exchange-alt"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Total Transactions</h3>
-                        <p class="stat-value" id="total-transactions">0</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon avg-expense">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Avg. Expense</h3>
-                        <p class="stat-value" id="avg-expense">$0.00</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main Content -->
-            <div class="content-grid">
-                <!-- Left Column - Forms -->
-                <div class="left-column">
-                    <!-- Add Money Form -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-plus-circle"></i> Add Money</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="add-amount">Amount to Add</label>
-                                <div class="input-with-icon">
-                                    <span class="currency">$</span>
-                                    <input type="number" id="add-amount" placeholder="0.00" step="0.01">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="add-description">Description (Optional)</label>
-                                <input type="text" id="add-description" placeholder="Salary, Gift, etc.">
-                            </div>
-                            <button class="btn btn-success" onclick="addMoney()">
-                                <i class="fas fa-plus"></i>
-                                <span>Add Money</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Add Expense Form -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-minus-circle"></i> Add Expense</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="expense-amount">Expense Amount</label>
-                                <div class="input-with-icon">
-                                    <span class="currency">$</span>
-                                    <input type="number" id="expense-amount" placeholder="0.00" step="0.01">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="expense-category">Category</label>
-                                <select id="expense-category">
-                                    <option value="">Select Category</option>
-                                    <option value="Food">Food & Dining</option>
-                                    <option value="Transport">Transportation</option>
-                                    <option value="Shopping">Shopping</option>
-                                    <option value="Entertainment">Entertainment</option>
-                                    <option value="Bills">Bills & Utilities</option>
-                                    <option value="Healthcare">Healthcare</option>
-                                    <option value="Education">Education</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="expense-description">Description</label>
-                                <input type="text" id="expense-description" placeholder="What did you spend on?">
-                            </div>
-                            <button class="btn btn-warning" onclick="addExpense()">
-                                <i class="fas fa-plus"></i>
-                                <span>Add Expense</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column - Reports & Transactions -->
-                <div class="right-column">
-                    <!-- Report Section -->
-                    <div class="report-section">
-                        <div class="report-header">
-                            <h3><i class="fas fa-file-alt"></i> Transaction Report</h3>
-                            <div class="report-actions">
-                                <button class="btn btn-primary" onclick="generateReport()" id="generate-report-btn">
-                                    <i class="fas fa-chart-bar"></i>
-                                    <span>Generate Report</span>
-                                </button>
-                                <button class="btn btn-success" onclick="downloadPDFReport()" id="download-report-btn" style="display: none;">
-                                    <i class="fas fa-file-pdf"></i>
-                                    <span>Download PDF</span>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Report Filters -->
-                        <div class="report-filters" id="report-filters">
-                            <div class="filter-group">
-                                <label for="report-period">Period:</label>
-                                <select id="report-period">
-                                    <option value="all">All Time</option>
-                                    <option value="today">Today</option>
-                                    <option value="week">This Week</option>
-                                    <option value="month">This Month</option>
-                                    <option value="year">This Year</option>
-                                    <option value="custom">Custom Range</option>
-                                </select>
-                            </div>
-                            <div class="filter-group" id="custom-date-range" style="display: none;">
-                                <label for="start-date">From:</label>
-                                <input type="date" id="start-date">
-                                <label for="end-date">To:</label>
-                                <input type="date" id="end-date">
-                            </div>
-                            <div class="filter-group">
-                                <label for="report-type">Type:</label>
-                                <select id="report-type">
-                                    <option value="all">All Transactions</option>
-                                    <option value="credit">Money Added Only</option>
-                                    <option value="debit">Expenses Only</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Report Summary -->
-                        <div class="report-summary" id="report-summary">
-                            <div class="loading">
-                                <i class="fas fa-chart-bar"></i>
-                                <span>Click "Generate Report" to see your transaction history</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Transactions -->
-                    <div class="transactions-section">
-                        <div class="section-header">
-                            <h3><i class="fas fa-history"></i> Recent Transactions</h3>
-                            <button class="btn-refresh" onclick="loadUserData()">
-                                <i class="fas fa-sync-alt"></i>
-                                <span>Refresh</span>
-                            </button>
-                        </div>
-                        
-                        <div class="transactions-list" id="transactions-list">
-                            <div class="loading">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <span>Loading transactions...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
