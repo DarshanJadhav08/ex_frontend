@@ -251,7 +251,7 @@ input:focus, select:focus {
   gap: 20px;
   border: 1px solid #e9ecef;
   transition: transform 0.3s;
-  min-width: 0; /* Prevents overflow on small screens */
+  min-width: 0;
 }
 
 .stat-card:hover {
@@ -274,7 +274,7 @@ input:focus, select:focus {
 
 .stat-content {
   flex: 1;
-  min-width: 0; /* Allows text truncation */
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -305,14 +305,16 @@ input:focus, select:focus {
   font-weight: 500;
 }
 
-/* Actions Section */
+/* Actions Section - FIXED CARD SIZES */
 .actions-section {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 25px;
   margin-bottom: 40px;
+  align-items: start;
 }
 
+/* Card Base Styles */
 .action-card {
   background: white;
   border-radius: 12px;
@@ -320,20 +322,31 @@ input:focus, select:focus {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  height: auto;
-  min-height: 400px;
+  overflow: hidden;
 }
 
+/* Income Card - Fixed Height */
 .income-card {
   border-top: 4px solid #2ecc71;
+  height: 420px;
+  min-height: 420px;
+  max-height: 420px;
 }
 
+/* Expense Card - Fixed Height */
 .expense-card {
   border-top: 4px solid #e74c3c;
+  height: 480px;
+  min-height: 480px;
+  max-height: 480px;
 }
 
+/* Report Card - Dynamic with Limits */
 .report-card {
   border-top: 4px solid #9b59b6;
+  min-height: 420px;
+  height: auto;
+  max-height: 800px;
 }
 
 .action-title {
@@ -344,6 +357,7 @@ input:focus, select:focus {
   font-size: 1.3rem;
   flex-wrap: wrap;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .action-icon {
@@ -377,6 +391,15 @@ input:focus, select:focus {
   flex-grow: 0;
 }
 
+/* Form Containers */
+.form-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Report Card Specific */
 .report-description {
   color: #6c757d;
   margin-bottom: 20px;
@@ -390,6 +413,7 @@ input:focus, select:focus {
   gap: 10px;
   margin-bottom: 20px;
   flex-grow: 0;
+  flex-shrink: 0;
 }
 
 .report-actions .btn {
@@ -401,19 +425,28 @@ input:focus, select:focus {
   min-height: 50px;
 }
 
+/* Report Content Area */
 .report-content {
   background: #f8f9fa;
   border-radius: 8px;
   padding: 15px;
-  margin-top: 20px;
-  max-height: 400px;
+  margin-top: auto;
+  flex: 1;
   overflow-y: auto;
   display: none;
-  flex-grow: 1;
+  min-height: 0;
 }
 
 .report-content.show {
-  display: block;
+  display: flex;
+  flex-direction: column;
+}
+
+.report-table-container {
+  flex: 1;
+  overflow-x: auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .report-table {
@@ -421,6 +454,7 @@ input:focus, select:focus {
   border-collapse: collapse;
   margin-top: 15px;
   font-size: 0.9rem;
+  min-width: 500px;
 }
 
 .report-table th {
@@ -451,6 +485,7 @@ input:focus, select:focus {
   margin-bottom: 15px;
   border: 1px solid #e9ecef;
   font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .summary-item {
@@ -504,9 +539,25 @@ footer {
   .stat-value {
     font-size: 1.6rem;
   }
+  
+  .income-card {
+    height: 430px;
+    min-height: 430px;
+    max-height: 430px;
+  }
+  
+  .expense-card {
+    height: 490px;
+    min-height: 490px;
+    max-height: 490px;
+  }
+  
+  .report-card {
+    max-height: 750px;
+  }
 }
 
-/* Tablets */
+/* Tablets (992px and below) */
 @media (max-width: 992px) {
   .actions-section {
     grid-template-columns: repeat(2, 1fr);
@@ -514,6 +565,7 @@ footer {
   
   .report-card {
     grid-column: span 2;
+    max-height: 700px;
   }
   
   .stats-cards {
@@ -524,12 +576,20 @@ footer {
     padding: 20px;
   }
   
-  .action-card {
-    min-height: 380px;
+  .income-card {
+    height: 420px;
+    min-height: 420px;
+    max-height: 420px;
+  }
+  
+  .expense-card {
+    height: 480px;
+    min-height: 480px;
+    max-height: 480px;
   }
 }
 
-/* Mobile Landscape and Small Tablets */
+/* Mobile Landscape and Small Tablets (768px and below) */
 @media (max-width: 768px) {
   .auth-section {
     flex-direction: column;
@@ -543,6 +603,7 @@ footer {
   
   .report-card {
     grid-column: span 1;
+    max-height: 650px;
   }
   
   .stats-cards {
@@ -582,7 +643,23 @@ footer {
   
   .action-card {
     padding: 20px;
-    min-height: auto;
+  }
+  
+  /* Adjusted heights for mobile */
+  .income-card {
+    height: 410px;
+    min-height: 410px;
+    max-height: 410px;
+  }
+  
+  .expense-card {
+    height: 470px;
+    min-height: 470px;
+    max-height: 470px;
+  }
+  
+  .report-card {
+    max-height: 600px;
   }
   
   .action-title {
@@ -610,18 +687,11 @@ footer {
   }
   
   .report-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  
-  .report-table th,
-  .report-table td {
-    min-width: 100px;
+    min-width: 550px;
   }
 }
 
-/* Mobile Portrait */
+/* Mobile Portrait (576px and below) */
 @media (max-width: 576px) {
   body {
     padding: 10px;
@@ -638,7 +708,6 @@ footer {
   
   .action-card {
     padding: 15px;
-    margin-bottom: 0;
   }
   
   .actions-section {
@@ -652,6 +721,23 @@ footer {
   .quick-stats-section {
     padding: 15px;
     margin-bottom: 20px;
+  }
+  
+  /* Compact heights for mobile portrait */
+  .income-card {
+    height: 390px;
+    min-height: 390px;
+    max-height: 390px;
+  }
+  
+  .expense-card {
+    height: 450px;
+    min-height: 450px;
+    max-height: 450px;
+  }
+  
+  .report-card {
+    max-height: 550px;
   }
   
   .stat-card {
@@ -686,11 +772,11 @@ footer {
   
   .report-content {
     padding: 12px;
-    max-height: 350px;
   }
   
   .report-table {
     font-size: 0.85rem;
+    min-width: 500px;
   }
   
   .report-summary {
@@ -707,7 +793,7 @@ footer {
   }
 }
 
-/* Extra Small Mobile Devices */
+/* Extra Small Mobile Devices (400px and below) */
 @media (max-width: 400px) {
   h1 {
     font-size: 1.6rem;
@@ -745,6 +831,23 @@ footer {
     font-size: 0.9rem;
   }
   
+  /* Very compact heights for small screens */
+  .income-card {
+    height: 380px;
+    min-height: 380px;
+    max-height: 380px;
+  }
+  
+  .expense-card {
+    height: 440px;
+    min-height: 440px;
+    max-height: 440px;
+  }
+  
+  .report-card {
+    max-height: 500px;
+  }
+  
   .stat-value {
     font-size: 1.5rem;
   }
@@ -755,6 +858,16 @@ footer {
   
   .report-description {
     font-size: 0.9rem;
+  }
+  
+  .report-table {
+    min-width: 450px;
+    font-size: 0.8rem;
+  }
+  
+  .report-table th,
+  .report-table td {
+    padding: 8px 6px;
   }
   
   .summary-item {
