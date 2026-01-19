@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Expense Tracker</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Add jsPDF library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -23,15 +25,15 @@
         </div>
         <div class="form-group">
           <label for="l_fname">First Name</label>
-          <input id="l_fname" placeholder="Enter your first name">
+          <input id="l_fname" placeholder="Enter your first name" autocomplete="off">
         </div>
         <div class="form-group">
           <label for="l_lname">Last Name</label>
-          <input id="l_lname" placeholder="Enter your last name">
+          <input id="l_lname" placeholder="Enter your last name" autocomplete="off">
         </div>
         <div class="form-group">
           <label for="l_pass">Password</label>
-          <input id="l_pass" type="password" placeholder="Enter your password">
+          <input id="l_pass" type="password" placeholder="Enter your password" autocomplete="new-password">
         </div>
         <button id="login-btn" class="btn btn-success" onclick="login()">Login</button>
         <div class="auth-toggle">
@@ -47,19 +49,19 @@
         </div>
         <div class="form-group">
           <label for="r_fname">First Name</label>
-          <input id="r_fname" placeholder="Enter your first name">
+          <input id="r_fname" placeholder="Enter your first name" autocomplete="off">
         </div>
         <div class="form-group">
           <label for="r_lname">Last Name</label>
-          <input id="r_lname" placeholder="Enter your last name">
+          <input id="r_lname" placeholder="Enter your last name" autocomplete="off">
         </div>
         <div class="form-group">
           <label for="r_pass">Password</label>
-          <input id="r_pass" type="password" placeholder="Create a password">
+          <input id="r_pass" type="password" placeholder="Create a password" autocomplete="new-password">
         </div>
         <div class="form-group">
           <label for="r_amount">Initial Amount</label>
-          <input id="r_amount" type="number" placeholder="e.g. 5000" value="1000">
+          <input id="r_amount" type="number" placeholder="e.g. 5000" autocomplete="off">
         </div>
         <button id="register-btn" class="btn btn-primary" onclick="register()">Register</button>
         <div class="auth-toggle">
@@ -70,43 +72,74 @@
 
     <!-- Main Content (shown after login) -->
     <div id="main-content" class="main-content">
-      <!-- User Info -->
-      <div class="user-info">
-        <div class="user-details">
+      <!-- User Info Header -->
+      <div class="user-header">
+        <div class="user-welcome">
           <h3 id="user-name">Welcome, User</h3>
           <div class="user-balance">Balance: $<span id="current-balance">0</span></div>
         </div>
         <button class="logout-btn" onclick="logout()">Logout</button>
       </div>
 
+      <!-- Quick Stats -->
+      <div class="quick-stats-section">
+        <div class="section-title">
+          <h2>📊 Quick Stats</h2>
+          <button class="refresh-btn" onclick="quickStats()">🔄 Refresh</button>
+        </div>
+        <div class="stats-cards">
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+              <div class="stat-value income-stat" id="total-income">$0</div>
+              <div class="stat-label">Total Income</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">💸</div>
+            <div class="stat-content">
+              <div class="stat-value expense-stat" id="total-expense">$0</div>
+              <div class="stat-label">Total Expenses</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⚖️</div>
+            <div class="stat-content">
+              <div class="stat-value balance-stat" id="net-balance">$0</div>
+              <div class="stat-label">Current Balance</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Actions Section -->
       <div class="actions-section">
-        <!-- Add Amount -->
-        <div class="action-card">
+        <!-- Add Income -->
+        <div class="action-card income-card">
           <div class="action-title">
             <div class="action-icon">+$</div>
             <h3>Add Income</h3>
           </div>
           <div class="form-group">
             <label for="amount">Amount</label>
-            <input id="amount" type="number" placeholder="Enter amount">
+            <input id="amount" type="number" placeholder="Enter amount" autocomplete="off">
           </div>
           <div class="form-group">
             <label for="desc">Description</label>
-            <input id="desc" placeholder="e.g., Salary, Gift, etc.">
+            <input id="desc" placeholder="e.g., Salary, Gift, etc." autocomplete="off">
           </div>
           <button class="btn btn-primary" onclick="addAmount()">Add Income</button>
         </div>
 
         <!-- Add Expense -->
-        <div class="action-card expense">
+        <div class="action-card expense-card">
           <div class="action-title">
             <div class="action-icon">-$</div>
             <h3>Add Expense</h3>
           </div>
           <div class="form-group">
             <label for="expense-amount">Amount</label>
-            <input id="expense-amount" type="number" placeholder="Enter amount">
+            <input id="expense-amount" type="number" placeholder="Enter amount" autocomplete="off">
           </div>
           <div class="form-group">
             <label for="category">Category</label>
@@ -123,66 +156,32 @@
           </div>
           <div class="form-group">
             <label for="expense-desc">Description</label>
-            <input id="expense-desc" placeholder="e.g., Lunch, Uber ride, etc.">
+            <input id="expense-desc" placeholder="e.g., Lunch, Uber ride, etc." autocomplete="off">
           </div>
           <button class="btn btn-success" onclick="addExpense()">Add Expense</button>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="action-card stats">
-          <div class="action-title">
-            <div class="action-icon">📊</div>
-            <h3>Quick Stats</h3>
-          </div>
-          <div class="stats-cards">
-            <div class="stat-card">
-              <div class="stat-value income-stat" id="total-income">$0</div>
-              <div class="stat-label">Total Income</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value expense-stat" id="total-expense">$0</div>
-              <div class="stat-label">Total Expenses</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value balance-stat" id="net-balance">$0</div>
-              <div class="stat-label">Net Balance</div>
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="quickStats()" style="margin-top: 20px;">Refresh Stats</button>
-        </div>
-
-        <!-- Generate Report -->
-        <div class="action-card report">
+        <!-- Report Section -->
+        <div class="action-card report-card">
           <div class="action-title">
             <div class="action-icon">📄</div>
-            <h3>Generate Report</h3>
+            <h3>Financial Report</h3>
           </div>
-          <p style="color: #7f8c8d; margin-bottom: 20px;">Generate a detailed report of your financial activities.</p>
-          <button class="btn btn-success" onclick="getReport()">Generate Report</button>
-          <button class="btn btn-primary" onclick="downloadReport()" style="margin-top: 10px;">Download PDF</button>
+          <p class="report-description">Generate and download detailed financial reports</p>
+          
+          <div class="report-actions">
+            <button class="btn btn-success" onclick="getReport()">
+              📊 Generate Report
+            </button>
+            <button class="btn btn-primary" onclick="downloadPDFReport()">
+              📥 Download PDF
+            </button>
+          </div>
+          
+          <div id="report-content" class="report-content">
+            <!-- Report will be displayed here -->
+          </div>
         </div>
-      </div>
-
-      <!-- Report Section -->
-      <div id="report-section" class="report-section">
-        <div class="report-header">
-          <div class="report-title">Financial Report</div>
-          <button class="download-btn" onclick="downloadReport()">
-            <span>📥</span> Download PDF
-          </button>
-        </div>
-        <div id="report-content">
-          <!-- Report will be displayed here -->
-        </div>
-      </div>
-
-      <!-- Output Section -->
-      <div id="output-section" class="output-section">
-        <div class="output-header">
-          <div class="output-title">API Response</div>
-          <button class="clear-btn" onclick="clearOutput()">Clear</button>
-        </div>
-        <pre id="output"></pre>
       </div>
     </div>
 
