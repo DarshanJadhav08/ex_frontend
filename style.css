@@ -158,6 +158,13 @@ input:focus, select:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.user-welcome {
+  flex: 1;
+  min-width: 250px;
 }
 
 .user-welcome h3 {
@@ -182,6 +189,7 @@ input:focus, select:focus {
   cursor: pointer;
   transition: background 0.3s;
   font-size: 0.95rem;
+  min-width: 120px;
 }
 
 .logout-btn:hover {
@@ -202,6 +210,8 @@ input:focus, select:focus {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .section-title h2 {
@@ -219,6 +229,7 @@ input:focus, select:focus {
   cursor: pointer;
   transition: background 0.3s;
   font-size: 0.9rem;
+  min-width: 100px;
 }
 
 .refresh-btn:hover {
@@ -240,6 +251,7 @@ input:focus, select:focus {
   gap: 20px;
   border: 1px solid #e9ecef;
   transition: transform 0.3s;
+  min-width: 0; /* Prevents overflow on small screens */
 }
 
 .stat-card:hover {
@@ -257,16 +269,22 @@ input:focus, select:focus {
   background: white;
   border-radius: 12px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 
 .stat-content {
   flex: 1;
+  min-width: 0; /* Allows text truncation */
+  overflow: hidden;
 }
 
 .stat-value {
   font-size: 1.8rem;
   font-weight: 700;
   margin-bottom: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .income-stat {
@@ -302,7 +320,8 @@ input:focus, select:focus {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
+  min-height: 400px;
 }
 
 .income-card {
@@ -323,6 +342,8 @@ input:focus, select:focus {
   margin-bottom: 20px;
   color: #2c3e50;
   font-size: 1.3rem;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .action-icon {
@@ -336,6 +357,7 @@ input:focus, select:focus {
   margin-right: 15px;
   color: white;
   font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .income-card .action-icon {
@@ -376,12 +398,13 @@ input:focus, select:focus {
   justify-content: center;
   gap: 8px;
   font-size: 1rem;
+  min-height: 50px;
 }
 
 .report-content {
   background: #f8f9fa;
   border-radius: 8px;
-  padding: 20px;
+  padding: 15px;
   margin-top: 20px;
   max-height: 400px;
   overflow-y: auto;
@@ -397,21 +420,24 @@ input:focus, select:focus {
   width: 100%;
   border-collapse: collapse;
   margin-top: 15px;
+  font-size: 0.9rem;
 }
 
 .report-table th {
   background: #e9ecef;
-  padding: 12px;
+  padding: 10px 8px;
   text-align: left;
   font-weight: 600;
   color: #495057;
   border-bottom: 2px solid #dee2e6;
+  white-space: nowrap;
 }
 
 .report-table td {
-  padding: 12px;
+  padding: 10px 8px;
   border-bottom: 1px solid #dee2e6;
   color: #6c757d;
+  word-break: break-word;
 }
 
 .report-table tr:hover {
@@ -421,17 +447,20 @@ input:focus, select:focus {
 .report-summary {
   background: white;
   border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
+  padding: 15px;
+  margin-bottom: 15px;
   border: 1px solid #e9ecef;
+  font-size: 0.9rem;
 }
 
 .summary-item {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #f8f9fa;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
 .summary-item:last-child {
@@ -443,10 +472,15 @@ input:focus, select:focus {
 .summary-label {
   font-weight: 500;
   color: #495057;
+  flex: 1;
+  min-width: 120px;
 }
 
 .summary-value {
   font-weight: 600;
+  flex: 1;
+  min-width: 80px;
+  text-align: right;
 }
 
 /* Footer */
@@ -459,13 +493,20 @@ footer {
   margin-top: 30px;
 }
 
-/* Responsive Design */
+/* ====================== RESPONSIVE DESIGN ====================== */
+
+/* Large Tablets and Small Laptops */
 @media (max-width: 1200px) {
   .actions-section {
     grid-template-columns: repeat(3, 1fr);
   }
+  
+  .stat-value {
+    font-size: 1.6rem;
+  }
 }
 
+/* Tablets */
 @media (max-width: 992px) {
   .actions-section {
     grid-template-columns: repeat(2, 1fr);
@@ -478,8 +519,17 @@ footer {
   .stats-cards {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .user-header {
+    padding: 20px;
+  }
+  
+  .action-card {
+    min-height: 380px;
+  }
 }
 
+/* Mobile Landscape and Small Tablets */
 @media (max-width: 768px) {
   .auth-section {
     flex-direction: column;
@@ -488,6 +538,7 @@ footer {
   
   .actions-section {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
   
   .report-card {
@@ -496,12 +547,18 @@ footer {
   
   .stats-cards {
     grid-template-columns: 1fr;
+    gap: 15px;
   }
   
   .user-header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
+    padding: 15px;
+  }
+  
+  .user-welcome {
+    min-width: 100%;
   }
   
   .section-title {
@@ -511,7 +568,8 @@ footer {
   }
   
   .refresh-btn {
-    align-self: flex-end;
+    align-self: stretch;
+    text-align: center;
   }
   
   h1 {
@@ -524,12 +582,49 @@ footer {
   
   .action-card {
     padding: 20px;
+    min-height: auto;
+  }
+  
+  .action-title {
+    font-size: 1.2rem;
+  }
+  
+  .action-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .stat-card {
+    padding: 15px;
+  }
+  
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .report-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .report-table th,
+  .report-table td {
+    min-width: 100px;
   }
 }
 
+/* Mobile Portrait */
 @media (max-width: 576px) {
   body {
-    padding: 15px;
+    padding: 10px;
   }
   
   h1 {
@@ -538,10 +633,16 @@ footer {
   
   .auth-card {
     padding: 15px;
+    max-width: 100%;
   }
   
   .action-card {
     padding: 15px;
+    margin-bottom: 0;
+  }
+  
+  .actions-section {
+    gap: 15px;
   }
   
   .user-header {
@@ -549,15 +650,120 @@ footer {
   }
   
   .quick-stats-section {
-    padding: 20px;
+    padding: 15px;
+    margin-bottom: 20px;
   }
   
   .stat-card {
     padding: 15px;
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+  
+  .stat-icon {
+    margin: 0 auto;
+  }
+  
+  .stat-content {
+    width: 100%;
+  }
+  
+  .stat-value {
+    font-size: 1.8rem;
+    white-space: normal;
   }
   
   .btn {
     padding: 12px 15px;
+    font-size: 0.95rem;
+  }
+  
+  .report-actions .btn {
+    min-height: 45px;
+    font-size: 0.9rem;
+  }
+  
+  .report-content {
+    padding: 12px;
+    max-height: 350px;
+  }
+  
+  .report-table {
+    font-size: 0.85rem;
+  }
+  
+  .report-summary {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+  
+  .logout-btn {
+    width: 100%;
+  }
+  
+  .section-title h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Extra Small Mobile Devices */
+@media (max-width: 400px) {
+  h1 {
+    font-size: 1.6rem;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .user-welcome h3 {
+    font-size: 1.2rem;
+  }
+  
+  .user-balance {
+    font-size: 1.4rem;
+  }
+  
+  .action-title {
+    font-size: 1.1rem;
+  }
+  
+  .action-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    margin-right: 10px;
+  }
+  
+  .form-group label {
+    font-size: 0.9rem;
+  }
+  
+  input, select {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .stat-label {
+    font-size: 0.9rem;
+  }
+  
+  .report-description {
+    font-size: 0.9rem;
+  }
+  
+  .summary-item {
+    flex-direction: column;
+    gap: 3px;
+  }
+  
+  .summary-value {
+    text-align: left;
   }
 }
 
