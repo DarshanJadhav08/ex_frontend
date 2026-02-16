@@ -1,4 +1,4 @@
-const API_BASE = "https://ex-branch.onrender.com";
+const API_BASE = "https://expense-backend-9.onrender.com";
 
 let USER_ID = null;
 let USER_NAME = "";
@@ -245,7 +245,7 @@ async function updateStatsFromAPI() {
   
   try {
     // Fetch quick stats
-    const statsRes = await fetch(`${API_BASE}/quick-stats/${USER_ID}`);
+    const statsRes = await fetch(`${API_BASE}/quick-stats?user_id=${USER_ID}`);
     
     if (statsRes.ok) {
       const statsData = await statsRes.json();
@@ -254,11 +254,9 @@ async function updateStatsFromAPI() {
         const data = statsData.data;
         
         // Update totals from API
-        TOTAL_INCOME = parseFloat(data.total_income) || TOTAL_INCOME;
-        TOTAL_EXPENSE = parseFloat(data.total_expense) || TOTAL_EXPENSE;
-        
-        // Calculate net balance
-        USER_BALANCE = TOTAL_INCOME - TOTAL_EXPENSE;
+        TOTAL_INCOME = parseFloat(data.total_amount) || TOTAL_INCOME;
+        TOTAL_EXPENSE = parseFloat(data.expense_amount) || TOTAL_EXPENSE;
+        USER_BALANCE = parseFloat(data.remaining_amount) || USER_BALANCE;
         
         // Update all displays
         document.getElementById('current-balance').textContent = USER_BALANCE.toFixed(2);
@@ -419,7 +417,7 @@ async function register() {
     first_name: firstName,
     last_name: lastName,
     password: password,
-    initial_amount: amount
+    total_amount: amount
   };
 
   const loading = showLoading();
@@ -508,44 +506,21 @@ async function login() {
     if (data.success) {
       USER_ID = data?.data?.id;
       
-      // Try to get initial amount from multiple sources
-      let initialAmount = 0;
+      // Get user data from API response
+      let totalAmount = 0;
+      let spentAmount = 0;
+      let remainingAmount = 0;
       
-      // 1. First try API response
-      if (data?.data?.initial_amount !== undefined && data?.data?.initial_amount !== null) {
-        initialAmount = parseFloat(data.data.initial_amount) || 0;
-      } 
-      // 2. Check if this was a recent registration
-      else {
-        try {
-          const lastReg = localStorage.getItem('last_registered_user');
-          if (lastReg) {
-            const regData = JSON.parse(lastReg);
-            if (regData.firstName === firstName && regData.lastName === lastName) {
-              initialAmount = regData.amount || 0;
-              // Clear this temporary storage
-              localStorage.removeItem('last_registered_user');
-            }
-          }
-        } catch (e) {
-          console.error("Error checking last registration:", e);
-        }
+      if (data?.data) {
+        totalAmount = parseFloat(data.data.total_amount) || 0;
+        spentAmount = parseFloat(data.data.expense_amount) || 0;
+        remainingAmount = parseFloat(data.data.remaining_amount) || 0;
       }
       
-      // 3. Load data from localStorage if user has been here before
-      const hasLocalData = loadUserData();
-      
-      if (!hasLocalData) {
-        // No local data, use initial amount from registration/login
-        TOTAL_INCOME = initialAmount;
-        TOTAL_EXPENSE = 0;
-        USER_BALANCE = initialAmount;
-        
-        // Add initial transaction if amount > 0
-        if (initialAmount > 0) {
-          addTransaction('Initial Deposit', initialAmount, 'Account opening balance');
-        }
-      }
+      // Set values from API
+      TOTAL_INCOME = totalAmount;
+      TOTAL_EXPENSE = spentAmount;
+      USER_BALANCE = remainingAmount;
       
       // Update user info display
       updateUserInfo(firstName, lastName, USER_BALANCE);
@@ -605,10 +580,15 @@ async function addAmount() {
   const loading = showLoading();
   
   try {
-    const res = await fetch(`${API_BASE}/add-amount/${USER_ID}`, {
+    const res = await fetch(`${API_BASE}/add-money`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        first_name: USER_NAME.split(' ')[0],
+        last_name: USER_NAME.split(' ')[1],
+        amount: amount,
+        description: description || "Income"
+      })
     });
 
     const data = await res.json();
@@ -693,7 +673,7 @@ async function addExpense() {
   const loading = showLoading();
   
   try {
-    const res = await fetch(`${API_BASE}/add-expense/${USER_ID}`, {
+    const res = await fetch(`${API_BASE}/user/${USER_ID}/expense`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -785,8 +765,8 @@ async function getReport() {
   const loading = showLoading();
   
   try {
-    const res = await fetch(`${API_BASE}/report/${USER_ID}`);
-    const data = await res.json();
+    const res = await fetch(`${API_BASE}/report?user_id=${USER_ID}`);
+https://expense-backend-9.onrender.com    const data = await res.json();
     
     if (data.success) {
       showReport(data);
