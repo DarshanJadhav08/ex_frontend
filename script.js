@@ -517,10 +517,15 @@ async function login() {
         remainingAmount = parseFloat(data.data.remaining_amount) || 0;
       }
       
-      // Set values from API
+      // Set values from API - directly use backend values, don't rely on localStorage
       TOTAL_INCOME = totalAmount;
       TOTAL_EXPENSE = spentAmount;
       USER_BALANCE = remainingAmount;
+      
+      // Clear any old localStorage data to prevent conflicts
+      if (USER_ID) {
+        localStorage.removeItem(`expense_tracker_${USER_ID}`);
+      }
       
       // Update user info display
       updateUserInfo(firstName, lastName, USER_BALANCE);
@@ -592,6 +597,7 @@ async function addAmount() {
     });
 
     const data = await res.json();
+    console.log('Add Money Response:', data);
     
     if (data.success) {
       // Update from API response - use values from backend, not add
@@ -686,6 +692,7 @@ async function addExpense() {
     });
 
     const data = await res.json();
+    console.log('Add Expense Response:', data);
     
     if (data.success) {
       // Update from API response - use values from backend, not add
