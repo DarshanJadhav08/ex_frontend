@@ -594,9 +594,15 @@ async function addAmount() {
     const data = await res.json();
     
     if (data.success) {
-      // Update totals
-      TOTAL_INCOME += amount;
-      USER_BALANCE += amount;
+      // Update from API response - use values from backend, not add
+      if (data.data && data.data.new_total !== undefined) {
+        TOTAL_INCOME = parseFloat(data.data.new_total) || TOTAL_INCOME;
+        USER_BALANCE = parseFloat(data.data.new_remaining) || USER_BALANCE;
+      } else {
+        // Fallback: add locally if API doesn't return updated values
+        TOTAL_INCOME += amount;
+        USER_BALANCE += amount;
+      }
       
       // Add transaction
       addTransaction('Income', amount, description || 'Income');
@@ -682,9 +688,15 @@ async function addExpense() {
     const data = await res.json();
     
     if (data.success) {
-      // Update totals
-      TOTAL_EXPENSE += amount;
-      USER_BALANCE -= amount;
+      // Update from API response - use values from backend, not add
+      if (data.data && data.data.new_spent !== undefined) {
+        TOTAL_EXPENSE = parseFloat(data.data.new_spent) || TOTAL_EXPENSE;
+        USER_BALANCE = parseFloat(data.data.new_remaining) || USER_BALANCE;
+      } else {
+        // Fallback: add locally if API doesn't return updated values
+        TOTAL_EXPENSE += amount;
+        USER_BALANCE -= amount;
+      }
       
       // Add transaction
       addTransaction('Expense', amount, description || 'Expense', category);
