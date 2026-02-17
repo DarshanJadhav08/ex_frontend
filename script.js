@@ -143,12 +143,17 @@ function updateUserInfo(firstName, lastName, balance) {
   document.getElementById('user-name').textContent = `Welcome, ${firstName}`;
   document.getElementById('current-balance').textContent = USER_BALANCE.toFixed(2);
   
-  // Update quick stats with initial balance
-  updateQuickStatsDisplay();
+  // DON'T call updateQuickStatsDisplay here - it will be called after setting TOTAL_INCOME and TOTAL_EXPENSE
 }
 
 // Update quick stats display
 function updateQuickStatsDisplay() {
+  console.log('updateQuickStatsDisplay called with:', {
+    TOTAL_INCOME,
+    TOTAL_EXPENSE,
+    USER_BALANCE
+  });
+  
   // Update all three stats
   document.getElementById('total-income').textContent = `$${TOTAL_INCOME.toFixed(2)}`;
   document.getElementById('total-expense').textContent = `$${TOTAL_EXPENSE.toFixed(2)}`;
@@ -246,6 +251,7 @@ async function updateStatsFromAPI() {
     
     if (statsRes.ok) {
       const statsData = await statsRes.json();
+      console.log('Quick Stats Response:', statsData);
       
       if (statsData && statsData.data) {
         const data = statsData.data;
@@ -254,6 +260,12 @@ async function updateStatsFromAPI() {
         TOTAL_INCOME = parseFloat(data.total_amount) || 0;
         TOTAL_EXPENSE = parseFloat(data.spent_amount) || 0;
         USER_BALANCE = parseFloat(data.remaining_amount) || 0;
+        
+        console.log('Updated values:', {
+          TOTAL_INCOME,
+          TOTAL_EXPENSE,
+          USER_BALANCE
+        });
         
         // Update all displays
         updateQuickStatsDisplay();
@@ -496,6 +508,7 @@ async function login() {
     
     if (data.success) {
       USER_ID = data?.data?.id;
+      console.log('Login response:', data);
       
       // Get user data from API response
       let totalAmount = 0;
@@ -508,10 +521,14 @@ async function login() {
         remainingAmount = parseFloat(data.data.remaining_amount) || 0;
       }
       
+      console.log('Login values:', { totalAmount, spentAmount, remainingAmount });
+      
       // Set values from API
       TOTAL_INCOME = totalAmount;
       TOTAL_EXPENSE = spentAmount;
       USER_BALANCE = remainingAmount;
+      
+      console.log('After setting globals:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
       
       // Clear localStorage
       if (USER_ID) {
@@ -520,6 +537,10 @@ async function login() {
       
       // Update UI
       updateUserInfo(firstName, lastName, USER_BALANCE);
+      
+      // NOW update the display after all values are set
+      updateQuickStatsDisplay();
+      
       showMainContent();
       
       showNotification('success', 'Welcome!', `Hello ${firstName}! Your balance is $${USER_BALANCE.toFixed(2)}.`);
