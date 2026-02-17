@@ -504,7 +504,7 @@ async function login() {
       
       if (data?.data) {
         totalAmount = parseFloat(data.data.total_amount) || 0;
-        spentAmount = parseFloat(data.data.expense_amount) || 0;
+        spentAmount = parseFloat(data.data.spent_amount) || 0;
         remainingAmount = parseFloat(data.data.remaining_amount) || 0;
       }
       
@@ -589,9 +589,6 @@ async function addAmount() {
       document.getElementById("amount").value = '';
       document.getElementById("desc").value = '';
       
-      // Store updated data
-      storeUserData();
-      
       showNotification('success', 'Income Added', `Successfully added $${amount.toFixed(2)} income`);
     } else {
       showNotification('error', 'Error', data.message || 'Failed to add income');
@@ -606,9 +603,6 @@ async function addAmount() {
     
     document.getElementById("amount").value = '';
     document.getElementById("desc").value = '';
-    
-    // Store updated data
-    storeUserData();
     
     showNotification('success', 'Income Added (Offline)', `Added $${amount.toFixed(2)} income locally`);
     console.error("Add amount error:", error);
@@ -673,9 +667,6 @@ async function addExpense() {
       document.getElementById("expense-amount").value = '';
       document.getElementById("expense-desc").value = '';
       
-      // Store updated data
-      storeUserData();
-      
       showNotification('success', 'Expense Added', `Successfully added $${amount.toFixed(2)} expense`);
     } else {
       showNotification('error', 'Error', data.message || 'Failed to add expense');
@@ -690,9 +681,6 @@ async function addExpense() {
     
     document.getElementById("expense-amount").value = '';
     document.getElementById("expense-desc").value = '';
-    
-    // Store updated data
-    storeUserData();
     
     showNotification('success', 'Expense Added (Offline)', `Added $${amount.toFixed(2)} expense locally`);
     console.error("Add expense error:", error);
