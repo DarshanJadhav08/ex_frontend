@@ -524,13 +524,18 @@ async function login() {
       TOTAL_EXPENSE = spentAmount;
       USER_BALANCE = remainingAmount;
       
+      console.log('After setting:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
+      
       // Clear any old localStorage data to prevent conflicts
       if (USER_ID) {
         localStorage.removeItem(`expense_tracker_${USER_ID}`);
       }
       
-      // Update user info display
+      // Update user info display AFTER setting all values
       updateUserInfo(firstName, lastName, USER_BALANCE);
+      
+      console.log('After updateUserInfo:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
+      
       showMainContent();
       
       showNotification('success', 'Welcome!', `Hello ${firstName}! Your balance is $${USER_BALANCE.toFixed(2)}.`);
