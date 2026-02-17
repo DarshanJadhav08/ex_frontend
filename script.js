@@ -254,7 +254,7 @@ async function updateStatsFromAPI() {
         
         // Update ALL totals from API - replace, don't add
         TOTAL_INCOME = parseFloat(data.total_amount) || 0;
-        TOTAL_EXPENSE = parseFloat(data.expense_amount) || 0;
+        TOTAL_EXPENSE = parseFloat(data.spent_amount) || 0;
         USER_BALANCE = parseFloat(data.remaining_amount) || 0;
         
         console.log('Updated values:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
@@ -537,15 +537,6 @@ async function login() {
       storeUserData();
       
       showNotification('success', 'Welcome!', `Hello ${firstName}! Your balance is $${USER_BALANCE.toFixed(2)}.`);
-      
-      // Try to sync with server for accurate stats
-      setTimeout(async () => {
-        try {
-          await updateStatsFromAPI();
-        } catch (error) {
-          console.log("Background stats sync failed, using local data");
-        }
-      }, 1000);
       
     } else {
       showNotification('error', 'Login Failed', data.message || 'Invalid credentials');
