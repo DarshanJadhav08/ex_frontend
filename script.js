@@ -533,9 +533,6 @@ async function login() {
       updateUserInfo(firstName, lastName, USER_BALANCE);
       showMainContent();
       
-      // Store data for future sessions
-      storeUserData();
-      
       showNotification('success', 'Welcome!', `Hello ${firstName}! Your balance is $${USER_BALANCE.toFixed(2)}.`);
       
     } else {
