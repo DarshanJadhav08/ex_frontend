@@ -239,9 +239,7 @@ function addTransaction(type, amount, description, category = null) {
 
 // Update stats from API response
 async function updateStatsFromAPI() {
-  if (!USER_ID) return;
-
-  const loading = showLoading();
+  if (!USER_ID) return false;
   
   try {
     // Fetch quick stats
@@ -249,14 +247,17 @@ async function updateStatsFromAPI() {
     
     if (statsRes.ok) {
       const statsData = await statsRes.json();
+      console.log('Quick Stats Response:', statsData);
       
       if (statsData && statsData.data) {
         const data = statsData.data;
         
-        // Update totals from API
-        TOTAL_INCOME = parseFloat(data.total_amount) || TOTAL_INCOME;
-        TOTAL_EXPENSE = parseFloat(data.expense_amount) || TOTAL_EXPENSE;
-        USER_BALANCE = parseFloat(data.remaining_amount) || USER_BALANCE;
+        // Update ALL totals from API - replace, don't add
+        TOTAL_INCOME = parseFloat(data.total_amount) || 0;
+        TOTAL_EXPENSE = parseFloat(data.expense_amount) || 0;
+        USER_BALANCE = parseFloat(data.remaining_amount) || 0;
+        
+        console.log('Updated values:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
         
         // Update all displays
         document.getElementById('current-balance').textContent = USER_BALANCE.toFixed(2);
@@ -270,8 +271,6 @@ async function updateStatsFromAPI() {
     }
   } catch (error) {
     console.error("Update stats error:", error);
-  } finally {
-    hideLoading(loading);
   }
   
   return false;
@@ -600,15 +599,8 @@ async function addAmount() {
     console.log('Add Money Response:', data);
     
     if (data.success) {
-      // Update from API response - use values from backend, not add
-      if (data.data && data.data.new_total !== undefined) {
-        TOTAL_INCOME = parseFloat(data.data.new_total) || TOTAL_INCOME;
-        USER_BALANCE = parseFloat(data.data.new_remaining) || USER_BALANCE;
-      } else {
-        // Fallback: add locally if API doesn't return updated values
-        TOTAL_INCOME += amount;
-        USER_BALANCE += amount;
-      }
+      // Fetch fresh data from backend after income
+      await updateStatsFromAPI();
       
       // Add transaction
       addTransaction('Income', amount, description || 'Income');
@@ -695,15 +687,8 @@ async function addExpense() {
     console.log('Add Expense Response:', data);
     
     if (data.success) {
-      // Update from API response - use values from backend, not add
-      if (data.data && data.data.new_spent !== undefined) {
-        TOTAL_EXPENSE = parseFloat(data.data.new_spent) || TOTAL_EXPENSE;
-        USER_BALANCE = parseFloat(data.data.new_remaining) || USER_BALANCE;
-      } else {
-        // Fallback: add locally if API doesn't return updated values
-        TOTAL_EXPENSE += amount;
-        USER_BALANCE -= amount;
-      }
+      // Fetch fresh data from backend after expense
+      await updateStatsFromAPI();
       
       // Add transaction
       addTransaction('Expense', amount, description || 'Expense', category);
