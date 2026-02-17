@@ -501,6 +501,7 @@ async function login() {
     });
 
     const data = await res.json();
+    console.log('Login Response:', data);
     
     if (data.success) {
       USER_ID = data?.data?.id;
@@ -515,6 +516,8 @@ async function login() {
         spentAmount = parseFloat(data.data.expense_amount) || 0;
         remainingAmount = parseFloat(data.data.remaining_amount) || 0;
       }
+      
+      console.log('Login values:', { totalAmount, spentAmount, remainingAmount });
       
       // Set values from API - directly use backend values, don't rely on localStorage
       TOTAL_INCOME = totalAmount;
