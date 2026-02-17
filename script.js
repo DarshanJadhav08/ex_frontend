@@ -414,6 +414,14 @@ async function login() {
         USER_BALANCE = parseFloat(data.data.remaining_amount) || 0;
       }
       
+      // Save session to localStorage
+      localStorage.setItem('expense_session', JSON.stringify({
+        userId: USER_ID,
+        firstName: firstName,
+        lastName: lastName,
+        timestamp: Date.now()
+      }));
+      
       updateUserInfo(firstName, lastName, USER_BALANCE);
       updateQuickStatsDisplay();
       showMainContent();
@@ -653,6 +661,9 @@ function logout() {
   ALL_TRANSACTIONS = [];
   IS_LOGGED_IN = false;
   
+  // Clear session from localStorage
+  localStorage.removeItem('expense_session');
+  
   if (reportContent) {
     reportContent.classList.remove('show');
     reportContent.innerHTML = '';
@@ -663,7 +674,39 @@ function logout() {
 }
 
 // Initialize the app
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check for existing session
+  const session = localStorage.getItem('expense_session');
+  if (session) {
+    try {
+      const sessionData = JSON.parse(session);
+      // Check if session is less than 24 hours old
+      if ((Date.now() - sessionData.timestamp) < 86400000) {
+        USER_ID = sessionData.userId;
+        
+        // Fetch fresh data from API
+        const res = await fetch(`${API_BASE}/quick-stats?user_id=${USER_ID}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            TOTAL_INCOME = parseFloat(data.data.total_amount) || 0;
+            TOTAL_EXPENSE = parseFloat(data.data.spent_amount) || 0;
+            USER_BALANCE = parseFloat(data.data.remaining_amount) || 0;
+            
+            updateUserInfo(sessionData.firstName, sessionData.lastName, USER_BALANCE);
+            updateQuickStatsDisplay();
+            showMainContent();
+            return;
+          }
+        }
+      }
+      // If session expired or API failed, clear it
+      localStorage.removeItem('expense_session');
+    } catch (e) {
+      localStorage.removeItem('expense_session');
+    }
+  }
+  
   document.getElementById('l_fname').focus();
   
   const loginInputs = document.querySelectorAll('#login-card input');
