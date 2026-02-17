@@ -233,8 +233,8 @@ function addTransaction(type, amount, description, category = null) {
     ALL_TRANSACTIONS = ALL_TRANSACTIONS.slice(0, 50);
   }
   
-  // Store updated data
-  storeUserData();
+  // Don't call storeUserData here - it causes issues
+  // storeUserData();
 }
 
 // Update stats from API response
@@ -242,29 +242,21 @@ async function updateStatsFromAPI() {
   if (!USER_ID) return false;
   
   try {
-    // Fetch quick stats
     const statsRes = await fetch(`${API_BASE}/quick-stats?user_id=${USER_ID}`);
     
     if (statsRes.ok) {
       const statsData = await statsRes.json();
-      console.log('Quick Stats Response:', statsData);
       
       if (statsData && statsData.data) {
         const data = statsData.data;
         
-        // Update ALL totals from API - replace, don't add
+        // Update ALL totals from API
         TOTAL_INCOME = parseFloat(data.total_amount) || 0;
         TOTAL_EXPENSE = parseFloat(data.spent_amount) || 0;
         USER_BALANCE = parseFloat(data.remaining_amount) || 0;
         
-        console.log('Updated values:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
-        
         // Update all displays
-        document.getElementById('current-balance').textContent = USER_BALANCE.toFixed(2);
         updateQuickStatsDisplay();
-        
-        // Store updated data
-        storeUserData();
         
         return true;
       }
@@ -501,7 +493,6 @@ async function login() {
     });
 
     const data = await res.json();
-    console.log('Login Response:', data);
     
     if (data.success) {
       USER_ID = data?.data?.id;
@@ -517,25 +508,18 @@ async function login() {
         remainingAmount = parseFloat(data.data.remaining_amount) || 0;
       }
       
-      console.log('Login values:', { totalAmount, spentAmount, remainingAmount });
-      
-      // Set values from API - directly use backend values, don't rely on localStorage
+      // Set values from API
       TOTAL_INCOME = totalAmount;
       TOTAL_EXPENSE = spentAmount;
       USER_BALANCE = remainingAmount;
       
-      console.log('After setting:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
-      
-      // Clear any old localStorage data to prevent conflicts
+      // Clear localStorage
       if (USER_ID) {
         localStorage.removeItem(`expense_tracker_${USER_ID}`);
       }
       
-      // Update user info display AFTER setting all values
+      // Update UI
       updateUserInfo(firstName, lastName, USER_BALANCE);
-      
-      console.log('After updateUserInfo:', { TOTAL_INCOME, TOTAL_EXPENSE, USER_BALANCE });
-      
       showMainContent();
       
       showNotification('success', 'Welcome!', `Hello ${firstName}! Your balance is $${USER_BALANCE.toFixed(2)}.`);
@@ -592,13 +576,9 @@ async function addAmount() {
     });
 
     const data = await res.json();
-    console.log('Add Money Response:', data);
     
     if (data.success) {
-      // Fetch fresh data from backend after income
       await updateStatsFromAPI();
-      
-      // Add transaction
       addTransaction('Income', amount, description || 'Income');
       
       // Update all displays
@@ -680,13 +660,9 @@ async function addExpense() {
     });
 
     const data = await res.json();
-    console.log('Add Expense Response:', data);
     
     if (data.success) {
-      // Fetch fresh data from backend after expense
       await updateStatsFromAPI();
-      
-      // Add transaction
       addTransaction('Expense', amount, description || 'Expense', category);
       
       // Update all displays
